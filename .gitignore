@@ -10,3 +10,7 @@ yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
 qa-artifacts/
+data/
+*.db
+*.db-shm
+*.db-wal

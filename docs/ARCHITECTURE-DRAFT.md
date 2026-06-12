@@ -22,6 +22,10 @@ Desktop App
   Local Storage
     SQLite
     User files
+  Local Backend
+    node:sqlite persistence
+    repositories
+    event log
   External Services
     UCI engine
     Optional LLM provider
@@ -144,3 +148,13 @@ The app must not require MCP for normal use.
 The database must preserve enough structure to reopen any important lesson from the original board position.
 
 See `docs/DATA-TRACEABILITY.md`.
+
+## Persistence v0.1
+The first persistence implementation lives outside the React runtime under `local/persistence`.
+
+It provides:
+- a SQLite schema migration;
+- repositories for sessions, games, event logs and learning events;
+- file-backed and in-memory database support for tests.
+
+This keeps the frontend portable while preparing the app for Tauri, a local HTTP service, or a moderator server.

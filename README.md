@@ -75,6 +75,9 @@ Implementado:
 - panel de motor simulado;
 - arbol de variantes simulado;
 - modelo inicial de roles cliente/moderador;
+- persistencia local SQLite v0.1 con event log;
+- repositorios locales para sesiones, partidas, posiciones, movimientos y aprendizaje;
+- tests de persistencia con `node:test`;
 - entorno local documentado;
 - QA visual con Playwright;
 - build y lint funcionales.
@@ -83,7 +86,6 @@ Pendiente:
 
 - reglas reales con `chess.js`;
 - motor UCI real;
-- persistencia SQLite;
 - importador PGN/FEN;
 - modelo real de sesiones/eventos;
 - tutor LLM configurable por API;
@@ -120,6 +122,7 @@ http://127.0.0.1:5173
 ```powershell
 npm run build
 npm run lint
+npm test
 npm run qa:visual
 ```
 
@@ -146,6 +149,11 @@ Local app layer
 Local storage
   -> SQLite
   -> PGN/FEN import/export
+
+Local backend
+  -> node:sqlite
+  -> event log
+  -> persistence repositories
 ```
 
 ## Trazabilidad De Aprendizaje

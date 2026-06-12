@@ -119,6 +119,24 @@ Recommended indexes:
 - `reviews(next_review_at)`
 - `tags(name)`
 
+## Persistence Slice v0.1
+The first implementation uses a local Node persistence layer with `node:sqlite`.
+
+The database is intentionally separated from React so it can later be exposed through a local API, Tauri command, or moderator server without rewriting the schema.
+
+The first slice stores:
+- sessions;
+- match policies;
+- games;
+- positions;
+- moves;
+- event log entries;
+- learning events;
+- tags;
+- review items.
+
+`event_log` is the audit and reconstruction source. Normalized tables make search, metrics and dashboard queries efficient.
+
 ## Export
 When exporting PGN, preserve:
 - standard PGN tags;

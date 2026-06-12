@@ -47,6 +47,18 @@ cd PROYECTOS\P-AJEDREZ-GM
 npm run lint
 ```
 
+Test:
+
+```powershell
+cd PROYECTOS\P-AJEDREZ-GM
+npm test
+```
+
+## Local Data
+Runtime databases must live in `data/` or another user-selected local data directory.
+
+The repository ignores `data/`, `*.db`, `*.db-shm` and `*.db-wal`.
+
 ## Future Desktop Environment
 The intended desktop target is Tauri. Tauri requires Rust and Cargo.
 
