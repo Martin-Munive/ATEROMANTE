@@ -1,7 +1,7 @@
 # Data Traceability
 
 ## Purpose
-AJEDREZ-GM must make chess learning retrievable.
+ATEROMANTE must make chess learning retrievable.
 
 If a student learns an opening idea, tactical pattern, endgame principle or strategic plan from a game, the system must preserve enough context to find it later.
 

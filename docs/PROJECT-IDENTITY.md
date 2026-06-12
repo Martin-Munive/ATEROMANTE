@@ -1,9 +1,9 @@
 # Project Identity
 
 ## Current Public Name
-`AJEDREZ-GM`
+`ATEROMANTE`
 
-This is a temporary public name. It is intentionally neutral and can be replaced later when the final brand is selected.
+This is the current public repository and product name.
 
 ## Stable Internal Slug
 `P-AJEDREZ-GM`
@@ -13,10 +13,10 @@ The repository folder can keep this slug during early development. A final renam
 ## Naming Variables
 Use these conceptual variables in documentation, UI copy and code constants:
 
-- `PROJECT_PUBLIC_NAME`: `AJEDREZ-GM`
-- `PROJECT_SLUG`: `ajedrez-gm`
-- `PROJECT_PACKAGE_NAME`: `ajedrez-gm`
+- `PROJECT_PUBLIC_NAME`: `ATEROMANTE`
+- `PROJECT_SLUG`: `ateromante`
+- `PROJECT_PACKAGE_NAME`: `ateromante`
 - `PROJECT_DISPLAY_TAGLINE`: `High-performance chess training lab for adults`
 
 ## Rule
-Do not scatter the final name manually across code. Centralize it in configuration, package metadata, app constants and documentation templates.
+Do not scatter future names manually across code. Centralize naming in configuration, package metadata, app constants and documentation templates.

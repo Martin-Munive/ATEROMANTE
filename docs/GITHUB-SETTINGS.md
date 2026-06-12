@@ -1,10 +1,10 @@
 # GitHub Settings
 
 ## Repository
-- Suggested name: `AJEDREZ-GM`
+- Suggested name: `ATEROMANTE`
 - Visibility: public
 - Default branch: `main`
-- License: MIT
+- License: GNU AGPL v3.0 or later
 
 ## Description
 Laboratorio local de entrenamiento ajedrecistico para adultos con tablero educativo, tutor configurable, motor UCI y trazabilidad de aprendizaje.
@@ -34,19 +34,19 @@ Not configured yet.
 Create a public repository from the project folder:
 
 ```powershell
-gh repo create Martin-Munive/AJEDREZ-GM --public --source . --remote origin --push --description "Laboratorio local de entrenamiento ajedrecistico para adultos con tablero educativo, tutor configurable, motor UCI y trazabilidad de aprendizaje."
+gh repo create Martin-Munive/ATEROMANTE --public --source . --remote origin --push --description "Laboratorio local de entrenamiento ajedrecistico para adultos con tablero educativo, tutor configurable, motor UCI y trazabilidad de aprendizaje."
 ```
 
 Set topics:
 
 ```powershell
-gh repo edit Martin-Munive/AJEDREZ-GM --add-topic chess --add-topic chess-training --add-topic chess-engine --add-topic stockfish --add-topic uci --add-topic pgn --add-topic fen --add-topic spaced-repetition --add-topic learning-science --add-topic react --add-topic vite --add-topic typescript --add-topic sqlite --add-topic local-first --add-topic educational-software
+gh repo edit Martin-Munive/ATEROMANTE --add-topic chess --add-topic chess-training --add-topic chess-engine --add-topic stockfish --add-topic uci --add-topic pgn --add-topic fen --add-topic spaced-repetition --add-topic learning-science --add-topic react --add-topic vite --add-topic typescript --add-topic sqlite --add-topic local-first --add-topic educational-software --add-topic llm --add-topic chess-tutor
 ```
 
 Verify:
 
 ```powershell
-gh repo view Martin-Munive/AJEDREZ-GM
+gh repo view Martin-Munive/ATEROMANTE
 ```
 
 ## Publication Guard
@@ -58,3 +58,4 @@ Before push, verify that the repository does not include:
 - generated QA screenshots;
 - `node_modules`;
 - build artifacts.
+- authorship or tooling metadata unrelated to the project.

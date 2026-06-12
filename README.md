@@ -1,8 +1,8 @@
 <div align="center">
 
-![AJEDREZ-GM](assets/ajedrez-gm-banner.svg)
+![ATEROMANTE](assets/ateromante-banner.svg)
 
-# AJEDREZ-GM
+# ATEROMANTE
 
 **Laboratorio local de entrenamiento ajedrecistico para adultos con tablero educativo, tutor configurable, motor UCI y trazabilidad de aprendizaje.**
 
@@ -14,16 +14,17 @@ Analista y programador de software
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111111)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![SQLite](https://img.shields.io/badge/SQLite-planned-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![License](https://img.shields.io/badge/license-MIT-16A34A)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-16A34A)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/Martin-Munive)
 [![Status](https://img.shields.io/badge/status-technical%20spike-f59e0b)](#estado-del-proyecto)
 
 </div>
 
-> AJEDREZ-GM is an early training-lab prototype. It is not a cheating tool and must not be used for hidden live assistance in competitive games against humans.
+> ATEROMANTE is an early training-lab prototype. It is not a cheating tool and must not be used for hidden live assistance in competitive games against humans.
 
 ## Que Es
 
-`AJEDREZ-GM` es una aplicacion local-first para estudiar ajedrez con una superficie visual propia: tablero educativo, panel de tutor, analisis de motor, arbol de variantes, reportes y memoria de aprendizaje.
+`ATEROMANTE` es una aplicacion local-first para estudiar ajedrez con una superficie visual propia: tablero educativo, panel de tutor, analisis de motor, arbol de variantes, reportes y memoria de aprendizaje.
 
 El objetivo es ayudar a adultos que empiezan o retoman ajedrez a entrenar de forma estructurada, medible y trazable. El sistema busca convertir partidas, errores, explicaciones y ejercicios en conocimiento consultable.
 
@@ -38,7 +39,7 @@ Muchos estudiantes adultos acumulan libros, puzzles y partidas, pero pierden la 
 - en que partida aparecio la idea;
 - cuando deben volver a practicarla.
 
-AJEDREZ-GM trata cada partida como una fuente de aprendizaje. Cada posicion relevante debe poder volver a abrirse, buscarse, etiquetarse y conectarse con ejercicios o repasos.
+ATEROMANTE trata cada partida como una fuente de aprendizaje. Cada posicion relevante debe poder volver a abrirse, buscarse, etiquetarse y conectarse con ejercicios o repasos.
 
 ## Capacidades Planeadas
 
@@ -85,7 +86,7 @@ Pendiente:
 - persistencia SQLite;
 - importador PGN/FEN;
 - modelo real de sesiones/eventos;
-- tutor LLM configurable;
+- tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
 
@@ -175,6 +176,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - [Data traceability](docs/DATA-TRACEABILITY.md)
 - [Environment](docs/ENVIRONMENT.md)
 - [GitHub settings](docs/GITHUB-SETTINGS.md)
+- [LLM providers](docs/LLM-PROVIDERS.md)
 - [MITNICK gates](docs/MITNICK-GATES.md)
 - [Renaming protocol](docs/RENAMING-PROTOCOL.md)
 - [Spike plan](docs/SPIKE-PLAN.md)
@@ -185,7 +187,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - No incluye bases de datos de terceros.
 - No debe usarse para asistencia oculta en partidas competitivas.
 - El motor UCI y SQLite estan planificados, no implementados todavia.
-- Las funciones LLM reales todavia no estan conectadas.
+- Las funciones LLM reales todavia no estan conectadas a proveedores externos.
 
 ## Roadmap Publico
 
@@ -195,7 +197,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 4. Conectar Stockfish/UCI.
 5. Importar/exportar PGN/FEN.
 6. Construir reportes post-partida.
-7. Agregar tutor LLM configurable.
+7. Agregar tutor LLM configurable por API.
 8. Prototipar servidor/moderador.
 9. Agregar busqueda por temas, aperturas y posiciones.
 
@@ -206,4 +208,6 @@ Medico general. Analista y programador de software.
 
 ## Licencia
 
-El codigo del repositorio se distribuye bajo licencia MIT, salvo que un archivo especifico indique otra cosa.
+El codigo del repositorio se distribuye bajo GNU Affero General Public License v3.0 or later. La documentacion y los activos originales del repositorio usan Creative Commons Attribution 4.0 International salvo que un archivo indique otra cosa.
+
+Para citar el proyecto, usa `CITATION.cff`. Para soporte, patrocinio o licenciamiento comercial alternativo, revisa [Commercial licensing and support](COMMERCIAL-LICENSING.md).

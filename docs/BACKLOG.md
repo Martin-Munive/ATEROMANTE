@@ -7,6 +7,7 @@
 - Connect to UCI engine.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
+- Add provider-agnostic LLM contract.
 - Draw basic educational overlays.
 
 ## MVP 1 - Post-Game Tutor
@@ -100,6 +101,7 @@
 - Installation guide.
 - Engine setup guide.
 - LLM provider setup guide.
+- Sponsor and citation setup.
 - Privacy guide.
 - Contribution guide.
 - License and third-party notices.

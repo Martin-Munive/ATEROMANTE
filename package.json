@@ -1,9 +1,13 @@
 {
-  "name": "ajedrez-gm",
+  "name": "ateromante",
   "private": true,
   "version": "0.0.1",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "description": "Laboratorio local de entrenamiento ajedrecistico para adultos con tablero educativo, tutor configurable, motor UCI y trazabilidad de aprendizaje.",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/Martin-Munive"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",

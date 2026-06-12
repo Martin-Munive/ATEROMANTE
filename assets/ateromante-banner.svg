@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
-  <title id="title">AJEDREZ-GM banner</title>
+  <title id="title">ATEROMANTE banner</title>
   <desc id="desc">Banner for a high-performance chess training laboratory for adults.</desc>
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
@@ -33,7 +33,7 @@
   </g>
   <path d="M1020 256 C1068 210 1080 160 1054 112 C1096 133 1134 172 1152 222" fill="none" stroke="#f0c86f" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
   <path d="M1152 222 L1122 217 L1142 194 Z" fill="#f0c86f" opacity="0.9"/>
-  <text x="96" y="126" fill="#f1eee6" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700">AJEDREZ-GM</text>
+  <text x="96" y="126" fill="#f1eee6" font-family="Georgia, 'Times New Roman', serif" font-size="62" font-weight="700">ATEROMANTE</text>
   <text x="96" y="178" fill="#f0c86f" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700">Laboratorio de entrenamiento ajedrecistico para adultos</text>
   <text x="96" y="226" fill="#c9c4b8" font-family="Segoe UI, Arial, sans-serif" font-size="22">Tablero educativo, motor UCI, tutor configurable, memoria local y trazabilidad de aprendizaje.</text>
   <g transform="translate(96 260)">

@@ -1,6 +1,6 @@
 # Contributing
 
-AJEDREZ-GM is in early design and spike development.
+ATEROMANTE is in early design and spike development.
 
 Useful contributions include:
 - architecture feedback;

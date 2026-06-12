@@ -3,7 +3,7 @@
 ## Purpose
 Make the future product rename simple, reviewable and safe.
 
-The project can start as `AJEDREZ-GM`, then later move to a final public name such as `PolemoForge` without losing consistency across docs, code, package metadata and UI.
+The project currently publishes as `ATEROMANTE`. Future renames must stay reviewable across docs, code, package metadata and UI.
 
 ## Rename Inputs
 Before renaming, define:
@@ -44,7 +44,7 @@ Before renaming, define:
 ## Search Commands
 
 ```powershell
-rg -n "AJEDREZ-GM|ajedrez-gm|P-AJEDREZ-GM" .
+rg -n "ATEROMANTE|ateromante|P-AJEDREZ-GM" .
 ```
 
 After choosing a final name, run the same search for both old and new names to verify that only intentional historical references remain.
@@ -53,7 +53,7 @@ After choosing a final name, run the same search for both old and new names to v
 A future script may implement:
 
 ```powershell
-scripts/rename-project.ps1 -OldName "AJEDREZ-GM" -NewName "PolemoForge" -NewSlug "polemoforge"
+scripts/rename-project.ps1 -OldName "ATEROMANTE" -NewName "NewName" -NewSlug "new-name"
 ```
 
 The script should:

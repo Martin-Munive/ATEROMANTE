@@ -61,3 +61,5 @@ Before enabling Tauri:
 LLM provider keys must live in `.env` or the operating system credential store.
 
 `.env` files are ignored by Git. If examples are needed, create `.env.example` without real secrets.
+
+Current example variables are documented in `.env.example`.

@@ -7,7 +7,7 @@ export function AppHeader() {
       <div className="brand">
         <div className="brand-mark">♞</div>
         <div>
-          <h1>AJEDREZ-GM</h1>
+          <h1>ATEROMANTE</h1>
           <span>Laboratorio de entrenamiento</span>
         </div>
       </div>
@@ -19,7 +19,7 @@ export function AppHeader() {
       <div className="session-card">
         <span>Asistencia</span>
         <strong className="positive">{trainingSession.assistanceLevel}</strong>
-        <small>visible para ambos</small>
+        <small>LLM: {trainingSession.llmProviderId}</small>
       </div>
       <div className="session-card">
         <span>Estación</span>

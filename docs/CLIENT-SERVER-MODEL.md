@@ -1,7 +1,7 @@
 # Client-Server Model
 
 ## Decision
-AJEDREZ-GM should support two delivery roles:
+ATEROMANTE should support two delivery roles:
 
 - Player Client
 - Moderator Server
@@ -58,8 +58,8 @@ Best for early development.
 ### Option B - Same Codebase, Separate Builds
 One repository, two builds:
 
-- `ajedrez-gm-client`
-- `ajedrez-gm-moderator`
+- `ateromante-client`
+- `ateromante-moderator`
 
 Best when distribution becomes public and simpler UX matters.
 

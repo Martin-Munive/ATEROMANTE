@@ -48,6 +48,8 @@ Manages UCI engine lifecycle and analysis requests.
 ### Tutor Service
 Transforms board state, engine lines, student profile and learning goals into educational feedback.
 
+The service must call providers through the `LlmTutorProvider` interface so public users can choose remote APIs or local HTTP models.
+
 ### Metrics Service
 Builds progress data from games, moves, mistakes, puzzles and reviews.
 
@@ -124,6 +126,8 @@ It must return:
 - optional candidate move;
 - optional visual annotations;
 - follow-up exercise suggestion.
+
+See `docs/LLM-PROVIDERS.md` for the current provider families and environment policy.
 
 ## Future MCP Layer
 MCP can be added later to expose app tools to LLM clients:

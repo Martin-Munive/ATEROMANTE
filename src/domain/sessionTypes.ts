@@ -18,5 +18,6 @@ export interface TrainingSessionSummary {
   tutorPolicy: string;
   assistanceLevel: string;
   visibility: string;
+  llmProviderId: string;
   matchPolicy: MatchPolicy;
 }

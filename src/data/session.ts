@@ -92,6 +92,7 @@ export const trainingSession: TrainingSessionSummary = {
   tutorPolicy: 'Tutor privado por estación',
   assistanceLevel: 'Clase consentida',
   visibility: 'Privado',
+  llmProviderId: 'mock-local',
   matchPolicy: {
     tutorVisibility: 'private',
     assistanceTiming: 'live',

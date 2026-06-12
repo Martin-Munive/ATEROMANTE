@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use ATEROMANTE in research, teaching, software, training programs or derivative work, please cite it."
+title: "ATEROMANTE"
+type: software
+authors:
+  - family-names: "Munive"
+    given-names: "Martin"
+abstract: "Local-first chess training laboratory for adult learners with educational board visualization, configurable tutor, UCI engine planning and traceable learning memory."
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/Martin-Munive/ATEROMANTE"
+url: "https://github.com/Martin-Munive/ATEROMANTE"
+version: 0.0.1
+date-released: 2026-06-12
