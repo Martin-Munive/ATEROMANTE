@@ -319,6 +319,18 @@ export class GameRepository {
     return this.db.prepare('SELECT * FROM moves WHERE id = ?').get(moveId);
   }
 
+  linkMovePositionAfter({ moveId, positionAfterId }) {
+    this.db.prepare('UPDATE moves SET position_after_id = ? WHERE id = ?')
+      .run(positionAfterId, moveId);
+    return this.db.prepare('SELECT * FROM moves WHERE id = ?').get(moveId);
+  }
+
+  updateGameNotation({ gameId, pgn, result = '*' }) {
+    this.db.prepare('UPDATE games SET pgn = ?, result = ?, updated_at = ? WHERE id = ?')
+      .run(pgn, result, nowIso(), gameId);
+    return this.getGame(gameId);
+  }
+
   getGameTimeline(gameId) {
     return {
       game: this.getGame(gameId),

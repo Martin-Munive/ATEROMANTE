@@ -39,6 +39,10 @@ Acceptance:
 - The current position can be exported as FEN.
 - The current game can be exported as PGN.
 
+Implementation note:
+- `GameService` owns this deterministic logic through `chess.js`.
+- The LLM must not be used for legal move validation, FEN generation or PGN generation.
+
 ### 2. Engine Analysis
 Acceptance:
 - The app can send a FEN position to a UCI engine.

@@ -377,6 +377,10 @@ button {
   place-items: center;
   font-size: clamp(28px, 4.7vh, 54px);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  padding: 0;
 }
 
 .square.light {
@@ -393,6 +397,28 @@ button {
   inset: 0;
   background: rgba(238, 197, 66, 0.22);
   box-shadow: inset 0 0 0 3px rgba(240, 200, 111, 0.72);
+}
+
+.selected-square::before,
+.legal-target::before,
+.last-move-square::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.selected-square::before {
+  box-shadow: inset 0 0 0 4px rgba(68, 180, 255, 0.86);
+}
+
+.legal-target::before {
+  background: radial-gradient(circle, rgba(32, 132, 83, 0.5) 0 18%, transparent 20%);
+}
+
+.last-move-square::before {
+  background: rgba(94, 234, 212, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(94, 234, 212, 0.42);
 }
 
 .piece {

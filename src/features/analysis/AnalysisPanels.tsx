@@ -1,7 +1,22 @@
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
-import { moves, variations } from '../../data/session';
+import type { Move } from 'chess.js';
+import type { useChessGame } from '../../hooks/useChessGame';
 
-export function MoveList() {
+interface MoveListProps {
+  moves: Move[];
+}
+
+export function MoveList({ moves }: MoveListProps) {
+  const rows = [];
+  for (let index = 0; index < moves.length; index += 2) {
+    rows.push({
+      number: `${Math.floor(index / 2) + 1}.`,
+      white: moves[index]?.san ?? '',
+      black: moves[index + 1]?.san ?? '',
+      current: index + 1 >= moves.length - 1,
+    });
+  }
+
   return (
     <section className="bottom-panel move-list">
       <div className="panel-heading">
@@ -10,11 +25,11 @@ export function MoveList() {
       </div>
       <table>
         <tbody>
-          {moves.map(([n, white, black]) => (
-            <tr className={white === 'Cd5' ? 'current' : ''} key={n}>
-              <td>{n}</td>
-              <td>{white}</td>
-              <td>{black}</td>
+          {(rows.length > 0 ? rows : [{ number: '1.', white: 'Inicio', black: '', current: true }]).map((row) => (
+            <tr className={row.current ? 'current' : ''} key={row.number}>
+              <td>{row.number}</td>
+              <td>{row.white}</td>
+              <td>{row.black}</td>
             </tr>
           ))}
         </tbody>
@@ -26,21 +41,24 @@ export function MoveList() {
   );
 }
 
-export function EnginePanel() {
+interface EnginePanelProps {
+  game: ReturnType<typeof useChessGame>;
+}
+
+export function EnginePanel({ game }: EnginePanelProps) {
   return (
     <section className="bottom-panel engine-panel">
       <div className="panel-heading">
         <span>Evaluación del motor</span>
-        <strong>Profundidad: 22/28 · Stockfish</strong>
+        <strong>Stockfish pendiente</strong>
       </div>
       <div className="chart">
-        <div className="score">+0.58</div>
+        <div className="score">--</div>
         <svg viewBox="0 0 420 126" role="img" aria-label="Curva de evaluación">
-          <polyline points="0,82 24,72 48,74 72,62 96,65 120,55 144,57 168,51 192,50 216,45 240,55 264,49 288,51 312,61 336,54 360,58 384,62 420,57" />
-          <line x1="224" y1="12" x2="224" y2="116" />
+          <polyline points="0,64 420,64" />
         </svg>
       </div>
-      <p><strong>Cd5 es excelente.</strong> Mejor jugada: 6... exd4 7. Cxd6+ Axd6 8. e5.</p>
+      <p><strong>{game.lastMove ? `${game.lastMove.san} registrada.` : 'Sin evaluación todavía.'}</strong> El motor UCI se conectará en un slice posterior.</p>
     </section>
   );
 }
@@ -50,12 +68,10 @@ export function VariationTree() {
     <section className="bottom-panel variation-tree">
       <div className="panel-heading"><span>Árbol de variantes</span></div>
       <div className="variation-list">
-        {variations.map(([score, line], index) => (
-          <div className={index === 0 ? 'variation selected' : 'variation'} key={line}>
-            <strong>{score}</strong>
-            <span>{line}</span>
-          </div>
-        ))}
+        <div className="variation selected">
+          <strong>--</strong>
+          <span>Variantes del motor pendientes de conexión.</span>
+        </div>
       </div>
     </section>
   );

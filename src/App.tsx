@@ -5,19 +5,22 @@ import { EnginePanel, MoveList, VariationTree } from './features/analysis/Analys
 import { ChessBoard } from './features/board/ChessBoard';
 import { PlayerPanel } from './features/game/PlayerPanel';
 import { TutorPanel } from './features/tutor/TutorPanel';
+import { useChessGame } from './hooks/useChessGame';
 
 export function App() {
+  const game = useChessGame();
+
   return (
     <div className="app">
       <AppHeader />
       <Sidebar />
       <main className="workspace">
-        <PlayerPanel />
-        <ChessBoard />
-        <TutorPanel />
+        <PlayerPanel game={game} />
+        <ChessBoard game={game} />
+        <TutorPanel game={game} />
         <UtilityRail />
-        <MoveList />
-        <EnginePanel />
+        <MoveList moves={game.history} />
+        <EnginePanel game={game} />
         <VariationTree />
       </main>
     </div>

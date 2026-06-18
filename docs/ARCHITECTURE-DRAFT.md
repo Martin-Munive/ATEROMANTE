@@ -37,6 +37,10 @@ Desktop App
 ### Game Service
 Owns legal game state, move history, FEN, PGN, branches and current position.
 
+The first implementation lives under `local/game` and uses `chess.js` as the deterministic rules engine. It validates moves, generates FEN/PGN and persists accepted moves through the local repositories.
+
+The tutor provider must not validate chess legality. The LLM receives prepared chess context after deterministic services have produced it.
+
 ### Session Service
 Owns training sessions, participants, shared state and event logs.
 

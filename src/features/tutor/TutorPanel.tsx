@@ -1,6 +1,14 @@
 import { Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { useChessGame } from '../../hooks/useChessGame';
 
-export function TutorPanel() {
+interface TutorPanelProps {
+  game: ReturnType<typeof useChessGame>;
+}
+
+export function TutorPanel({ game }: TutorPanelProps) {
+  const lastMove = game.lastMove?.san ?? 'sin jugada';
+  const verdict = game.lastError ?? (game.inCheck ? 'Jaque detectado: revisa la seguridad del rey.' : 'Movimiento legal registrado por el árbitro interno.');
+
   return (
     <section className="tutor-panel">
       <div className="panel-heading">
@@ -10,38 +18,32 @@ export function TutorPanel() {
       <div className="move-verdict">
         <div className="star">★</div>
         <div>
-          <strong>Cd5! es una jugada excelente</strong>
-          <span>+0.58</span>
+          <strong>{game.lastMove ? `${lastMove} registrada` : 'Partida lista'}</strong>
+          <span>{game.turn} juegan</span>
         </div>
       </div>
       <p>
-        Excelente ruptura central. El caballo se instala en d5, presionando c7 y e7,
-        y controla casillas clave del centro.
+        {verdict}
       </p>
       <ul>
-        <li>Controlas la importante casilla e7.</li>
-        <li>Limitas las piezas negras.</li>
-        <li>Mejoras tu pieza desarrollándola activamente.</li>
+        <li>FEN actual disponible para motor, tutor y persistencia.</li>
+        <li>PGN real generado por reglas determinísticas.</li>
+        <li>El LLM todavía no valida reglas: solo explicará contexto preparado.</li>
       </ul>
       <div className="lesson-block">
-        <h3>Ideas estratégicas</h3>
+        <h3>FEN</h3>
         <p>
-          Las blancas buscan espacio en el centro y actividad de piezas. El caballo en d5
-          es una pieza clave en el ataque al flanco de rey.
+          {game.fen}
         </p>
       </div>
       <div className="lesson-block">
-        <h3>Planes recomendados</h3>
-        <ol>
-          <li>Presionar con e5 en el momento oportuno.</li>
-          <li>Desarrollar el alfil de c1 vía g5.</li>
-          <li>Enrocar corto y atacar el flanco de rey.</li>
-        </ol>
+        <h3>PGN</h3>
+        <p>{game.pgn || 'La partida aun no tiene movimientos.'}</p>
       </div>
       <div className="tutor-actions">
         <button><ChevronLeft size={16} />Anterior</button>
-        <span>6 / 18</span>
-        <button>Siguiente <ChevronRight size={16} /></button>
+        <span>{game.history.length} jugadas</span>
+        <button onClick={game.resetGame} type="button">Reiniciar <ChevronRight size={16} /></button>
       </div>
     </section>
   );

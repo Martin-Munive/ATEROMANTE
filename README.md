@@ -70,13 +70,14 @@ Implementado:
 
 - app React/Vite;
 - pantalla operativa de laboratorio;
-- tablero visual con ayudas;
+- tablero visual con click-to-move, movimientos legales y ayudas de ultima jugada;
 - panel de tutor simulado;
 - panel de motor simulado;
 - arbol de variantes simulado;
 - modelo inicial de roles cliente/moderador;
 - persistencia local SQLite v0.1 con event log;
 - repositorios locales para sesiones, partidas, posiciones, movimientos y aprendizaje;
+- `GameService` local con `chess.js` para reglas, FEN, PGN y movimientos legales;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
 - QA visual con Playwright;
@@ -84,7 +85,6 @@ Implementado:
 
 Pendiente:
 
-- reglas reales con `chess.js`;
 - motor UCI real;
 - importador PGN/FEN;
 - modelo real de sesiones/eventos;
@@ -138,8 +138,8 @@ React/Vite UI
   -> dashboard
 
 Local app layer
-  -> Session Service
   -> Game Service
+  -> Session Service
   -> Match Policy Service
   -> Moderator Service
   -> Engine Service
@@ -199,9 +199,9 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 
 ## Roadmap Publico
 
-1. Implementar reglas reales con `chess.js`.
-2. Crear modelo local de sesiones, eventos y politicas de ayuda.
-3. Agregar SQLite para partidas, posiciones y aprendizaje.
+1. Conectar `GameService` al tablero visual.
+2. Crear modelo local completo de sesiones, eventos y politicas de ayuda.
+3. Expandir SQLite para importacion PGN, revisiones y reportes.
 4. Conectar Stockfish/UCI.
 5. Importar/exportar PGN/FEN.
 6. Construir reportes post-partida.
