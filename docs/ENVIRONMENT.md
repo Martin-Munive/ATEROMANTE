@@ -33,6 +33,20 @@ cd PROYECTOS\P-AJEDREZ-GM
 npm run dev
 ```
 
+Run the local API and UI together:
+
+```powershell
+cd PROYECTOS\P-AJEDREZ-GM
+npm run dev:local
+```
+
+Run only the local API:
+
+```powershell
+cd PROYECTOS\P-AJEDREZ-GM
+npm run api
+```
+
 Build:
 
 ```powershell

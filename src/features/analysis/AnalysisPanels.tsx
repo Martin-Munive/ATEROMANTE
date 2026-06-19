@@ -1,9 +1,8 @@
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
-import type { Move } from 'chess.js';
 import type { useChessGame } from '../../hooks/useChessGame';
 
 interface MoveListProps {
-  moves: Move[];
+  moves: ReturnType<typeof useChessGame>['history'];
 }
 
 export function MoveList({ moves }: MoveListProps) {

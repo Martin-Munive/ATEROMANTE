@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const artifactsDir = resolve(projectRoot, 'qa-artifacts');
-const port = process.env.PORT ?? '5173';
+const port = process.env.PORT ?? '5175';
 const url = `http://127.0.0.1:${port}`;
 
 if (!/^\d{2,5}$/.test(port)) {
@@ -42,12 +42,19 @@ async function main() {
 
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
   const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', `npm run dev -- --port ${port}`]
-    : ['run', 'dev', '--', '--port', port];
+    ? ['/d', '/s', '/c', 'npm run dev:local']
+    : ['run', 'dev:local'];
   const server = spawn(command, args, {
     cwd: projectRoot,
     stdio: 'pipe',
-    env: { ...process.env, BROWSER: 'none' },
+    env: {
+      ...process.env,
+      BROWSER: 'none',
+      PORT: port,
+      ATEROMANTE_API_PORT: '4175',
+      ATEROMANTE_DB_PATH: ':memory:',
+      VITE_API_BASE_URL: 'http://127.0.0.1:4175',
+    },
   });
   server.stdout.on('data', (chunk) => serverOutput.push(chunk.toString()));
   server.stderr.on('data', (chunk) => serverOutput.push(chunk.toString()));

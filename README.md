@@ -13,7 +13,7 @@ Analista y programador de software
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111111)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![SQLite](https://img.shields.io/badge/SQLite-planned-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-16A34A)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/Martin-Munive)
 [![Status](https://img.shields.io/badge/status-technical%20spike-f59e0b)](#estado-del-proyecto)
@@ -71,6 +71,7 @@ Implementado:
 - app React/Vite;
 - pantalla operativa de laboratorio;
 - tablero visual con click-to-move, movimientos legales y ayudas de ultima jugada;
+- puente API local para que la UI cree sesiones y persista movimientos;
 - panel de tutor simulado;
 - panel de motor simulado;
 - arbol de variantes simulado;
@@ -87,7 +88,7 @@ Pendiente:
 
 - motor UCI real;
 - importador PGN/FEN;
-- modelo real de sesiones/eventos;
+- recuperacion visual de sesiones existentes;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
@@ -105,10 +106,16 @@ Instalar dependencias localmente:
 npm install
 ```
 
-Ejecutar en desarrollo:
+Ejecutar solo la UI en desarrollo:
 
 ```powershell
 npm run dev
+```
+
+Ejecutar UI con API local y SQLite:
+
+```powershell
+npm run dev:local
 ```
 
 Abrir:
@@ -124,6 +131,7 @@ npm run build
 npm run lint
 npm test
 npm run qa:visual
+npm run qa:interaction
 ```
 
 `qa:visual` genera capturas locales en `qa-artifacts/`, carpeta excluida de Git.
@@ -138,6 +146,7 @@ React/Vite UI
   -> dashboard
 
 Local app layer
+  -> Local API
   -> Game Service
   -> Session Service
   -> Match Policy Service
@@ -195,6 +204,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - No incluye bases de datos de terceros.
 - No debe usarse para asistencia oculta en partidas competitivas.
 - El motor UCI y SQLite estan planificados, no implementados todavia.
+- El motor UCI todavia no esta conectado.
 - Las funciones LLM reales todavia no estan conectadas a proveedores externos.
 
 ## Roadmap Publico

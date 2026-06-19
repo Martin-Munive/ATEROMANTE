@@ -54,12 +54,19 @@ async function main() {
 
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
   const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', `npm run dev -- --port ${port}`]
-    : ['run', 'dev', '--', '--port', port];
+    ? ['/d', '/s', '/c', `npm run dev:local`]
+    : ['run', 'dev:local'];
   const server = spawn(command, args, {
     cwd: projectRoot,
     stdio: 'pipe',
-    env: { ...process.env, BROWSER: 'none' },
+    env: {
+      ...process.env,
+      BROWSER: 'none',
+      PORT: port,
+      ATEROMANTE_API_PORT: '4174',
+      ATEROMANTE_DB_PATH: ':memory:',
+      VITE_API_BASE_URL: 'http://127.0.0.1:4174',
+    },
   });
   server.stdout.on('data', (chunk) => serverOutput.push(chunk.toString()));
   server.stderr.on('data', (chunk) => serverOutput.push(chunk.toString()));

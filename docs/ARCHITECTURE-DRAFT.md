@@ -23,6 +23,7 @@ Desktop App
     SQLite
     User files
   Local Backend
+    Local HTTP API
     node:sqlite persistence
     repositories
     event log
@@ -40,6 +41,17 @@ Owns legal game state, move history, FEN, PGN, branches and current position.
 The first implementation lives under `local/game` and uses `chess.js` as the deterministic rules engine. It validates moves, generates FEN/PGN and persists accepted moves through the local repositories.
 
 The tutor provider must not validate chess legality. The LLM receives prepared chess context after deterministic services have produced it.
+
+### Local API
+Exposes deterministic app capabilities to the React runtime without importing Node-only modules into the browser bundle.
+
+The first implementation lives under `local/api` and provides:
+- `GET /api/health`;
+- `POST /api/sessions`;
+- `GET /api/games/:gameId`;
+- `POST /api/games/:gameId/moves`.
+
+This bridge is intentionally small. It can later be replaced or wrapped by Tauri commands, a local moderator server, or a networked training-room server without changing the React components around chess rules.
 
 ### Session Service
 Owns training sessions, participants, shared state and event logs.

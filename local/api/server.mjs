@@ -1,0 +1,157 @@
+import { createServer } from 'node:http';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
+import { GameService, IllegalMoveError } from '../game/game-service.mjs';
+
+const DEFAULT_PORT = Number.parseInt(process.env.ATEROMANTE_API_PORT ?? '4174', 10);
+const DEFAULT_DB_PATH = process.env.ATEROMANTE_DB_PATH
+  ?? resolve(fileURLToPath(new URL('../../data/ateromante.db', import.meta.url)));
+
+function sendJson(response, status, body) {
+  response.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end(JSON.stringify(body));
+}
+
+function sendNoContent(response) {
+  response.writeHead(204, {
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end();
+}
+
+async function readJson(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+  const raw = Buffer.concat(chunks).toString('utf8');
+  return raw ? JSON.parse(raw) : {};
+}
+
+function serializeMove(move) {
+  return {
+    id: move.id,
+    ply: move.ply,
+    san: move.san,
+    uci: move.uci,
+    from: move.from_square,
+    to: move.to_square,
+    promotion: move.promotion,
+    classification: move.classification,
+  };
+}
+
+function serializeState(state) {
+  return {
+    sessionId: state.game.session_id,
+    gameId: state.game.id,
+    fen: state.fen,
+    pgn: state.pgn,
+    turn: state.turn,
+    result: state.result,
+    legalMoves: state.legalMoves,
+    moves: state.moves.map(serializeMove),
+    events: state.events.map((event) => ({
+      sequence: event.sequence,
+      eventType: event.event_type,
+      occurredAt: event.occurred_at,
+      payload: event.payload,
+    })),
+  };
+}
+
+export function createAteromanteApiServer({ dbPath = DEFAULT_DB_PATH } = {}) {
+  const db = openAteromanteDatabase(dbPath);
+  const service = new GameService({ db });
+
+  const server = createServer(async (request, response) => {
+    try {
+      if (request.method === 'OPTIONS') {
+        sendNoContent(response);
+        return;
+      }
+
+      const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+
+      if (request.method === 'GET' && url.pathname === '/api/health') {
+        sendJson(response, 200, { ok: true });
+        return;
+      }
+
+      if (request.method === 'POST' && url.pathname === '/api/sessions') {
+        const input = await readJson(request);
+        const created = service.createTrainingGame(input);
+        const state = service.getGameState(created.game.id);
+        sendJson(response, 201, serializeState(state));
+        return;
+      }
+
+      const gameMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
+      if (request.method === 'GET' && gameMatch) {
+        const state = service.getGameState(gameMatch[1]);
+        if (!state) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+        sendJson(response, 200, serializeState(state));
+        return;
+      }
+
+      const moveMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/moves$/);
+      if (request.method === 'POST' && moveMatch) {
+        const gameId = moveMatch[1];
+        const current = service.getGameState(gameId);
+        if (!current) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+
+        const input = await readJson(request);
+        service.applyMove({
+          sessionId: current.game.session_id,
+          gameId,
+          from: input.from,
+          to: input.to,
+          promotion: input.promotion,
+        });
+        sendJson(response, 200, serializeState(service.getGameState(gameId)));
+        return;
+      }
+
+      sendJson(response, 404, { error: 'not_found' });
+    } catch (error) {
+      if (error instanceof IllegalMoveError) {
+        sendJson(response, 400, { error: 'illegal_move', message: error.message });
+        return;
+      }
+
+      sendJson(response, 500, { error: 'internal_error', message: error.message });
+    }
+  });
+
+  server.on('close', () => closeDatabase(db));
+  return server;
+}
+
+export function startAteromanteApiServer({ port = DEFAULT_PORT, dbPath = DEFAULT_DB_PATH } = {}) {
+  const server = createAteromanteApiServer({ dbPath });
+  server.listen(port, '127.0.0.1', () => {
+    const address = server.address();
+    const resolvedPort = typeof address === 'object' && address ? address.port : port;
+    console.log(`ateromante_api=http://127.0.0.1:${resolvedPort}`);
+    console.log(`ateromante_db=${dbPath}`);
+  });
+  return server;
+}
+
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  startAteromanteApiServer();
+}

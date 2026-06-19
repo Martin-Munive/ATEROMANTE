@@ -1,7 +1,31 @@
-import { useMemo, useState } from 'react';
-import { Chess, type Move, type Square } from 'chess.js';
+import { useEffect, useMemo, useState } from 'react';
+import { Chess, type Square } from 'chess.js';
 
 export type BoardPieces = Record<string, string>;
+
+interface ApiMove {
+  id: string;
+  ply: number;
+  san: string;
+  uci: string;
+  from: string;
+  to: string;
+  promotion?: string | null;
+  classification?: string | null;
+}
+
+interface ApiGameState {
+  sessionId: string;
+  gameId: string;
+  fen: string;
+  pgn: string;
+  turn: 'white' | 'black';
+  result: string;
+  legalMoves: string[];
+  moves: ApiMove[];
+}
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
   bp: '♟',
@@ -18,14 +42,6 @@ const pieceGlyphs: Record<string, string> = {
   wk: '♔',
 };
 
-function buildChess(history: Move[]) {
-  const chess = new Chess();
-  for (const move of history) {
-    chess.move({ from: move.from, to: move.to, promotion: move.promotion });
-  }
-  return chess;
-}
-
 function boardPieces(chess: Chess): BoardPieces {
   const pieces: BoardPieces = {};
 
@@ -41,30 +57,64 @@ function boardPieces(chess: Chess): BoardPieces {
   return pieces;
 }
 
-function resultLabel(chess: Chess) {
-  if (chess.isCheckmate()) {
-    return chess.turn() === 'w' ? '0-1' : '1-0';
-  }
-  if (chess.isDraw()) {
-    return '1/2-1/2';
-  }
-  return '*';
-}
-
-function turnLabel(chess: Chess) {
-  return chess.turn() === 'w' ? 'Blancas' : 'Negras';
-}
-
 function toSquare(square: string) {
   return square as Square;
 }
 
+function turnLabel(turn: 'white' | 'black') {
+  return turn === 'white' ? 'Blancas' : 'Negras';
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.message ?? payload.error ?? 'request_failed');
+  }
+  return payload;
+}
+
 export function useChessGame() {
-  const [history, setHistory] = useState<Move[]>([]);
+  const [state, setState] = useState<ApiGameState | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const chess = useMemo(() => buildChess(history), [history]);
+  useEffect(() => {
+    let active = true;
+
+    postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
+      mode: 'solo-practice',
+      stationRole: 'hybrid',
+    })
+      .then((nextState) => {
+        if (active) {
+          setState(nextState);
+          setLastError(null);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setLastError(`No se pudo conectar con la API local: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const chess = useMemo(() => new Chess(state?.fen), [state?.fen]);
   const selectedLegalTargets = useMemo(() => {
     if (!selectedSquare) {
       return new Set<string>();
@@ -72,34 +122,28 @@ export function useChessGame() {
     return new Set(chess.moves({ square: toSquare(selectedSquare), verbose: true }).map((move) => move.to));
   }, [chess, selectedSquare]);
 
-  const lastMove = history.at(-1) ?? null;
+  const lastMove = state?.moves.at(-1) ?? null;
 
-  function handleSquare(square: string) {
+  async function handleSquare(square: string) {
     setLastError(null);
+
+    if (!state) {
+      return null;
+    }
 
     if (!selectedSquare) {
       if (chess.get(toSquare(square))) {
         setSelectedSquare(square);
       }
-      return;
+      return null;
     }
 
     if (selectedSquare === square) {
       setSelectedSquare(null);
-      return;
+      return null;
     }
 
-    try {
-      const next = new Chess();
-      for (const move of history) {
-        next.move({ from: move.from, to: move.to, promotion: move.promotion });
-      }
-      const move = next.move({ from: selectedSquare, to: square, promotion: 'q' });
-      setHistory(next.history({ verbose: true }));
-      setSelectedSquare(null);
-      setLastError(null);
-      return move;
-    } catch {
+    if (!selectedLegalTargets.has(square)) {
       if (chess.get(toSquare(square))?.color === chess.turn()) {
         setSelectedSquare(square);
       } else {
@@ -108,12 +152,38 @@ export function useChessGame() {
       }
       return null;
     }
+
+    try {
+      const nextState = await postJson<ApiGameState>(`${apiBaseUrl}/api/games/${state.gameId}/moves`, {
+        from: selectedSquare,
+        to: square,
+        promotion: 'q',
+      });
+      setState(nextState);
+      setSelectedSquare(null);
+      setLastError(null);
+      return nextState.moves.at(-1) ?? null;
+    } catch (error) {
+      setLastError(error instanceof Error ? error.message : 'Movimiento rechazado por la API local.');
+      setSelectedSquare(null);
+      return null;
+    }
   }
 
-  function resetGame() {
-    setHistory([]);
+  async function resetGame() {
+    setLoading(true);
     setSelectedSquare(null);
     setLastError(null);
+    try {
+      setState(await postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
+        mode: 'solo-practice',
+        stationRole: 'hybrid',
+      }));
+    } catch (error) {
+      setLastError(error instanceof Error ? error.message : 'No se pudo reiniciar la partida.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return {
@@ -122,14 +192,15 @@ export function useChessGame() {
     selectedLegalTargets,
     lastMove,
     lastError,
-    history,
-    fen: chess.fen(),
-    pgn: chess.pgn(),
-    turn: turnLabel(chess),
-    result: resultLabel(chess),
-    legalMoveCount: chess.moves().length,
+    history: state?.moves ?? [],
+    fen: state?.fen ?? chess.fen(),
+    pgn: state?.pgn ?? '',
+    turn: state ? turnLabel(state.turn) : 'Cargando',
+    result: state?.result ?? '*',
+    legalMoveCount: state?.legalMoves.length ?? 0,
     inCheck: chess.inCheck(),
     isGameOver: chess.isGameOver(),
+    loading,
     handleSquare,
     resetGame,
   };
