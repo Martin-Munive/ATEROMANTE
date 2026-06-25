@@ -25,6 +25,24 @@ interface ApiGameState {
   moves: ApiMove[];
 }
 
+export interface EngineAnalysis {
+  id: string;
+  gameId: string;
+  moveId: string | null;
+  positionId: string | null;
+  engineName: string;
+  depth: number;
+  multipv: number;
+  score: {
+    type: 'cp' | 'mate';
+    value: number | null;
+  };
+  bestMove: string;
+  principalVariation: string[];
+  perspective: 'side-to-move';
+  createdAt: string;
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
@@ -84,6 +102,9 @@ export function useChessGame() {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analysis, setAnalysis] = useState<EngineAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -160,6 +181,8 @@ export function useChessGame() {
         promotion: 'q',
       });
       setState(nextState);
+      setAnalysis(null);
+      setAnalysisError(null);
       setSelectedSquare(null);
       setLastError(null);
       return nextState.moves.at(-1) ?? null;
@@ -174,6 +197,8 @@ export function useChessGame() {
     setLoading(true);
     setSelectedSquare(null);
     setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
     try {
       setState(await postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
         mode: 'solo-practice',
@@ -183,6 +208,27 @@ export function useChessGame() {
       setLastError(error instanceof Error ? error.message : 'No se pudo reiniciar la partida.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function analyzePosition(depth = 12) {
+    if (!state || analysisLoading) {
+      return null;
+    }
+
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      const result = await postJson<EngineAnalysis>(`${apiBaseUrl}/api/games/${state.gameId}/analysis`, { depth });
+      setAnalysis(result);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo analizar la posición.';
+      setAnalysis(null);
+      setAnalysisError(message);
+      return null;
+    } finally {
+      setAnalysisLoading(false);
     }
   }
 
@@ -201,7 +247,11 @@ export function useChessGame() {
     inCheck: chess.inCheck(),
     isGameOver: chess.isGameOver(),
     loading,
+    analysis,
+    analysisLoading,
+    analysisError,
     handleSquare,
     resetGame,
+    analyzePosition,
   };
 }

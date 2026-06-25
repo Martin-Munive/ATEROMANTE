@@ -446,41 +446,25 @@ button {
   right: 5px;
 }
 
-.arrow {
+.analysis-arrow {
   position: absolute;
   z-index: 4;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(248, 211, 46, 0.72);
-  transform-origin: left center;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.28));
 }
 
-.arrow::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -17px;
-  width: 0;
-  height: 0;
-  border-top: 16px solid transparent;
-  border-bottom: 16px solid transparent;
-  border-left: 24px solid rgba(248, 211, 46, 0.72);
-  transform: translateY(-50%);
+.analysis-arrow line {
+  stroke: rgba(248, 211, 46, 0.78);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  marker-end: url(#analysis-arrowhead);
 }
 
-.arrow.primary {
-  width: 190px;
-  left: 36%;
-  top: 63%;
-  transform: rotate(-58deg);
-}
-
-.arrow.secondary {
-  width: 145px;
-  left: 35%;
-  top: 67%;
-  transform: rotate(24deg);
+.analysis-arrow path {
+  fill: rgba(248, 211, 46, 0.78);
 }
 
 .tutor-panel {
@@ -687,6 +671,33 @@ button {
 
 .engine-panel p strong {
   color: var(--green);
+}
+
+.engine-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.engine-actions button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #8b6936;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #d0aa6a, #9d7134);
+  color: #18130d;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.engine-actions button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.engine-panel .engine-error {
+  color: #ff9b86;
 }
 
 .variation-list {

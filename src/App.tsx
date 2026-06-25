@@ -21,7 +21,7 @@ export function App() {
         <UtilityRail />
         <MoveList moves={game.history} />
         <EnginePanel game={game} />
-        <VariationTree />
+        <VariationTree game={game} />
       </main>
     </div>
   );

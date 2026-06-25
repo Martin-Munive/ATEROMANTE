@@ -3,7 +3,7 @@
 ## Active Gates For The Spike
 
 ### Environment Gate
-Status: in progress.
+Status: PASS.
 
 Criteria:
 - no global dependency installation;
@@ -13,7 +13,7 @@ Criteria:
 - commands documented.
 
 ### Architecture Gate
-Status: in progress.
+Status: PASS.
 
 Criteria:
 - app shell separated from feature components;
@@ -22,7 +22,13 @@ Criteria:
 - no irreversible choice before spike evidence.
 
 ### Frontend Gate
-Status: in progress.
+Status: PASS_WITH_RISK.
+
+Evidence:
+- build and lint pass;
+- analysis panel models empty, loading, error and success states;
+- best-move arrow derives from the API result;
+- rendered browser QA remains pending because the integrated browser runtime was unavailable in the implementation session.
 
 Criteria:
 - primary screen is the real tool surface, not a landing page;
@@ -38,7 +44,13 @@ npm run qa:visual
 ```
 
 ### Security And Privacy Gate
-Status: pending.
+Status: PASS for the local UCI slice.
+
+Evidence:
+- engine executable path is server configuration, not request input;
+- FEN comes from persisted deterministic game state and is validated;
+- depth and timeout are bounded;
+- process errors are mapped without leaking local executable paths to the client.
 
 Criteria:
 - no private material in public project;
@@ -60,7 +72,15 @@ Criteria:
 - avoid network code before the local session/event model exists.
 
 ### Supply Chain Gate
-Status: pending.
+Status: PASS_WITH_RISK.
+
+Evidence:
+- no new npm dependency was added;
+- Stockfish is not bundled;
+- an external executable must be configured by the user.
+
+Residual risk:
+- provenance, checksum, license notice and platform compatibility of the selected Stockfish binary must be verified before distribution guidance is finalized.
 
 Criteria:
 - dependency licenses reviewed;

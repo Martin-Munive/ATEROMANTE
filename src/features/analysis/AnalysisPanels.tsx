@@ -45,31 +45,59 @@ interface EnginePanelProps {
 }
 
 export function EnginePanel({ game }: EnginePanelProps) {
+  const score = game.analysis?.score.type === 'mate'
+    ? `M${game.analysis.score.value}`
+    : game.analysis?.score.value === null || game.analysis?.score.value === undefined
+      ? '--'
+      : `${game.analysis.score.value >= 0 ? '+' : ''}${(game.analysis.score.value / 100).toFixed(2)}`;
+
   return (
     <section className="bottom-panel engine-panel">
       <div className="panel-heading">
         <span>Evaluación del motor</span>
-        <strong>Stockfish pendiente</strong>
+        <strong>{game.analysis?.engineName ?? 'Motor UCI externo'}</strong>
       </div>
       <div className="chart">
-        <div className="score">--</div>
+        <div className="score">{score}</div>
         <svg viewBox="0 0 420 126" role="img" aria-label="Curva de evaluación">
           <polyline points="0,64 420,64" />
         </svg>
       </div>
-      <p><strong>{game.lastMove ? `${game.lastMove.san} registrada.` : 'Sin evaluación todavía.'}</strong> El motor UCI se conectará en un slice posterior.</p>
+      <div className="engine-actions">
+        <p aria-live="polite">
+          {game.analysisLoading && <strong>Analizando la posición…</strong>}
+          {!game.analysisLoading && game.analysis && (
+            <><strong>Mejor jugada: {game.analysis.bestMove}</strong> Profundidad {game.analysis.depth}, perspectiva del lado al turno.</>
+          )}
+          {!game.analysisLoading && game.analysisError && <strong className="engine-error">{game.analysisError}</strong>}
+          {!game.analysisLoading && !game.analysis && !game.analysisError && <strong>Sin evaluación todavía.</strong>}
+        </p>
+        <button
+          disabled={game.loading || game.analysisLoading}
+          onClick={() => game.analyzePosition()}
+          type="button"
+        >
+          {game.analysisLoading ? 'Analizando…' : 'Analizar posición'}
+        </button>
+      </div>
     </section>
   );
 }
 
-export function VariationTree() {
+interface VariationTreeProps {
+  game: ReturnType<typeof useChessGame>;
+}
+
+export function VariationTree({ game }: VariationTreeProps) {
+  const variation = game.analysis?.principalVariation.join(' ') ?? 'Variantes del motor pendientes de análisis.';
+
   return (
     <section className="bottom-panel variation-tree">
       <div className="panel-heading"><span>Árbol de variantes</span></div>
       <div className="variation-list">
         <div className="variation selected">
-          <strong>--</strong>
-          <span>Variantes del motor pendientes de conexión.</span>
+          <strong>{game.analysis ? `d${game.analysis.depth}` : '--'}</strong>
+          <span>{variation}</span>
         </div>
       </div>
     </section>

@@ -65,6 +65,14 @@ Owns room creation, participant approval, policy changes, pause/resume control a
 ### Engine Service
 Manages UCI engine lifecycle and analysis requests.
 
+The first implementation lives under `local/engine` and starts an external UCI executable for each requested analysis. The local API exposes `POST /api/games/:gameId/analysis`, analyzes the persisted current FEN, stores the result in `engine_evaluations` and returns score, best move and principal variation to React.
+
+Security and portability constraints:
+- the executable path comes from server environment, never from the HTTP request;
+- FEN is reconstructed from the persisted game and validated before entering the UCI protocol;
+- depth and timeout are bounded;
+- Stockfish is not bundled in the repository.
+
 ### Tutor Service
 Transforms board state, engine lines, student profile and learning goals into educational feedback.
 

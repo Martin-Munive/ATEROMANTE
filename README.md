@@ -79,6 +79,9 @@ Implementado:
 - persistencia local SQLite v0.1 con event log;
 - repositorios locales para sesiones, partidas, posiciones, movimientos y aprendizaje;
 - `GameService` local con `chess.js` para reglas, FEN, PGN y movimientos legales;
+- adaptador de proceso UCI externo con validacion, timeout y profundidad limitada;
+- endpoint local de analisis con persistencia de evaluacion, mejor jugada y variante principal;
+- panel de motor con estados de carga/error/exito y flecha educativa para la mejor jugada;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
 - QA visual con Playwright;
@@ -86,7 +89,7 @@ Implementado:
 
 Pendiente:
 
-- motor UCI real;
+- validar la integracion contra un binario Stockfish real en los entornos soportados;
 - importador PGN/FEN;
 - recuperacion visual de sesiones existentes;
 - tutor LLM configurable por API;
@@ -203,8 +206,8 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - No incluye material privado de estudio.
 - No incluye bases de datos de terceros.
 - No debe usarse para asistencia oculta en partidas competitivas.
-- El motor UCI y SQLite estan planificados, no implementados todavia.
-- El motor UCI todavia no esta conectado.
+- Stockfish no se distribuye dentro del repositorio: el usuario debe configurar un ejecutable UCI externo.
+- La integracion UCI esta verificada con un motor controlado de pruebas; falta la validacion contra Stockfish real en cada plataforma soportada.
 - Las funciones LLM reales todavia no estan conectadas a proveedores externos.
 
 ## Roadmap Publico

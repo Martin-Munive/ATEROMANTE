@@ -2,7 +2,14 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
+import { EngineEvaluationRepository } from '../persistence/repositories.mjs';
 import { GameService, IllegalMoveError } from '../game/game-service.mjs';
+import {
+  UciEngineInputError,
+  UciEngineProtocolError,
+  UciEngineService,
+  UciEngineUnavailableError,
+} from '../engine/uci-engine-service.mjs';
 
 const DEFAULT_PORT = Number.parseInt(process.env.ATEROMANTE_API_PORT ?? '4174', 10);
 const DEFAULT_DB_PATH = process.env.ATEROMANTE_DB_PATH
@@ -68,9 +75,34 @@ function serializeState(state) {
   };
 }
 
-export function createAteromanteApiServer({ dbPath = DEFAULT_DB_PATH } = {}) {
+function serializeEvaluation(row, perspective = 'side-to-move') {
+  const score = row.score_mate !== null
+    ? { type: 'mate', value: row.score_mate }
+    : { type: 'cp', value: row.score_cp };
+
+  return {
+    id: row.id,
+    gameId: row.game_id,
+    moveId: row.move_id,
+    positionId: row.position_id,
+    engineName: row.engine_name,
+    depth: row.depth,
+    multipv: row.multipv,
+    score,
+    bestMove: row.best_move,
+    principalVariation: JSON.parse(row.pv_json),
+    perspective,
+    createdAt: row.created_at,
+  };
+}
+
+export function createAteromanteApiServer({
+  dbPath = DEFAULT_DB_PATH,
+  engineService = new UciEngineService(),
+} = {}) {
   const db = openAteromanteDatabase(dbPath);
   const service = new GameService({ db });
+  const engineEvaluations = new EngineEvaluationRepository(db, service.eventLog);
 
   const server = createServer(async (request, response) => {
     try {
@@ -126,10 +158,54 @@ export function createAteromanteApiServer({ dbPath = DEFAULT_DB_PATH } = {}) {
         return;
       }
 
+      const analysisMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/analysis$/);
+      if (request.method === 'POST' && analysisMatch) {
+        const gameId = analysisMatch[1];
+        const current = service.getGameState(gameId);
+        if (!current) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+
+        const input = await readJson(request);
+        const analysis = await engineService.analyze({ fen: current.fen, depth: input.depth });
+        const currentPosition = current.positions.at(-1) ?? null;
+        const currentMove = current.moves.at(-1) ?? null;
+        const stored = engineEvaluations.recordEvaluation({
+          sessionId: current.game.session_id,
+          gameId,
+          moveId: currentMove?.id ?? null,
+          positionId: currentPosition?.id ?? null,
+          ...analysis,
+        });
+
+        sendJson(response, 201, serializeEvaluation(stored, analysis.perspective));
+        return;
+      }
+
       sendJson(response, 404, { error: 'not_found' });
     } catch (error) {
       if (error instanceof IllegalMoveError) {
         sendJson(response, 400, { error: 'illegal_move', message: error.message });
+        return;
+      }
+
+      if (error instanceof UciEngineInputError) {
+        sendJson(response, 400, { error: 'invalid_analysis_request', message: error.message });
+        return;
+      }
+      if (error instanceof UciEngineUnavailableError) {
+        sendJson(response, 503, {
+          error: 'engine_unavailable',
+          message: 'Motor UCI no disponible. Configura ATEROMANTE_UCI_ENGINE_PATH.',
+        });
+        return;
+      }
+      if (error instanceof UciEngineProtocolError) {
+        sendJson(response, 502, {
+          error: 'engine_protocol_error',
+          message: 'El motor UCI no completo el analisis correctamente.',
+        });
         return;
       }
 

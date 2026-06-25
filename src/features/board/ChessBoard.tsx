@@ -5,7 +5,22 @@ interface ChessBoardProps {
   game: ReturnType<typeof useChessGame>;
 }
 
+function arrowCoordinates(bestMove: string | undefined) {
+  if (!bestMove || !/^[a-h][1-8][a-h][1-8]/.test(bestMove)) {
+    return null;
+  }
+
+  const center = (square: string) => ({
+    x: ((square.charCodeAt(0) - 97) + 0.5) * 12.5,
+    y: ((8 - Number.parseInt(square[1], 10)) + 0.5) * 12.5,
+  });
+
+  return { from: center(bestMove.slice(0, 2)), to: center(bestMove.slice(2, 4)) };
+}
+
 export function ChessBoard({ game }: ChessBoardProps) {
+  const suggestionArrow = arrowCoordinates(game.analysis?.bestMove);
+
   return (
     <section className="board-shell" aria-label="Tablero educativo">
       <div className="board">
@@ -36,6 +51,21 @@ export function ChessBoard({ game }: ChessBoardProps) {
               </button>
             );
           }),
+        )}
+        {suggestionArrow && (
+          <svg className="analysis-arrow" viewBox="0 0 100 100" aria-hidden="true">
+            <defs>
+              <marker id="analysis-arrowhead" markerHeight="3" markerWidth="3" orient="auto" refX="2.4" refY="1.5">
+                <path d="M0,0 L3,1.5 L0,3 Z" />
+              </marker>
+            </defs>
+            <line
+              x1={suggestionArrow.from.x}
+              y1={suggestionArrow.from.y}
+              x2={suggestionArrow.to.x}
+              y2={suggestionArrow.to.y}
+            />
+          </svg>
         )}
       </div>
     </section>

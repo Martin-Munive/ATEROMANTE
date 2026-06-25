@@ -341,6 +341,79 @@ export class GameRepository {
   }
 }
 
+export class EngineEvaluationRepository {
+  constructor(db, eventLog = new EventLogRepository(db)) {
+    this.db = db;
+    this.eventLog = eventLog;
+  }
+
+  recordEvaluation({
+    sessionId,
+    gameId,
+    moveId = null,
+    positionId = null,
+    engineName,
+    depth = null,
+    multipv = 1,
+    scoreCp = null,
+    scoreMate = null,
+    bestMove,
+    principalVariation = [],
+  }) {
+    const evaluationId = id('eng');
+    const timestamp = nowIso();
+
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare(`
+        INSERT INTO engine_evaluations (
+          id, game_id, move_id, position_id, engine_name, depth, multipv,
+          score_cp, score_mate, best_move, pv_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        evaluationId,
+        gameId,
+        moveId,
+        positionId,
+        engineName,
+        depth,
+        multipv,
+        scoreCp,
+        scoreMate,
+        bestMove,
+        json(principalVariation),
+        timestamp,
+      );
+
+      this.eventLog.appendEvent({
+        eventType: 'engine.analysis.completed',
+        sessionId,
+        gameId,
+        moveId,
+        positionId,
+        payload: { evaluationId, engineName, depth, scoreCp, scoreMate, bestMove },
+        occurredAt: timestamp,
+      });
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+
+    return this.getEvaluation(evaluationId);
+  }
+
+  getEvaluation(evaluationId) {
+    return this.db.prepare('SELECT * FROM engine_evaluations WHERE id = ?').get(evaluationId);
+  }
+
+  listByGame(gameId) {
+    return this.db
+      .prepare('SELECT * FROM engine_evaluations WHERE game_id = ? ORDER BY created_at DESC')
+      .all(gameId);
+  }
+}
+
 export class LearningRepository {
   constructor(db, eventLog = new EventLogRepository(db)) {
     this.db = db;

@@ -49,6 +49,12 @@ Acceptance:
 - The engine returns at least one candidate line.
 - The UI displays evaluation and best move.
 
+Current evidence:
+- external UCI process adapter implemented;
+- handshake, input validation, timeout and output parsing covered by automated tests;
+- API persistence and React states implemented;
+- real Stockfish binary still needs an environment validation run before this milestone is closed.
+
 ### 3. Persistence
 Acceptance:
 - A local database stores sessions, games, moves and engine evaluations.

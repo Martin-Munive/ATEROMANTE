@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createAteromanteApiServer } from '../local/api/server.mjs';
+import { UciEngineUnavailableError } from '../local/engine/uci-engine-service.mjs';
 
-async function withServer(run) {
-  const server = createAteromanteApiServer({ dbPath: ':memory:' });
+async function withServer(run, options = {}) {
+  const server = createAteromanteApiServer({ dbPath: ':memory:', ...options });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
@@ -81,4 +82,77 @@ test('local API rejects illegal moves without mutating the game', async () => {
     assert.equal(fetched.moves.length, 0);
     assert.equal(fetched.turn, 'white');
   });
+});
+
+test('local API analyzes the persisted position and stores the engine result', async () => {
+  const engineService = {
+    async analyze({ fen, depth }) {
+      assert.match(fen, / w KQkq /);
+      assert.equal(depth, 10);
+      return {
+        engineName: 'Injected UCI Engine',
+        depth: 10,
+        multipv: 1,
+        scoreCp: 34,
+        scoreMate: null,
+        bestMove: 'e2e4',
+        principalVariation: ['e2e4', 'e7e5', 'g1f3'],
+        perspective: 'side-to-move',
+      };
+    },
+  };
+
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    const created = await readJson(createdResponse);
+
+    const analysisResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/analysis`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ depth: 10 }),
+    });
+    assert.equal(analysisResponse.status, 201);
+
+    const analysis = await readJson(analysisResponse);
+    assert.equal(analysis.engineName, 'Injected UCI Engine');
+    assert.deepEqual(analysis.score, { type: 'cp', value: 34 });
+    assert.equal(analysis.bestMove, 'e2e4');
+    assert.deepEqual(analysis.principalVariation, ['e2e4', 'e7e5', 'g1f3']);
+    assert.ok(analysis.positionId);
+
+    const fetchedResponse = await fetch(`${baseUrl}/api/games/${created.gameId}`);
+    const fetched = await readJson(fetchedResponse);
+    assert.ok(fetched.events.some((event) => event.eventType === 'engine.analysis.completed'));
+  }, { engineService });
+});
+
+test('local API reports an unavailable UCI engine without leaking process details', async () => {
+  const engineService = {
+    async analyze() {
+      throw new UciEngineUnavailableError('C:\\private\\stockfish.exe was not found');
+    },
+  };
+
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    const created = await readJson(createdResponse);
+
+    const analysisResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/analysis`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ depth: 12 }),
+    });
+    assert.equal(analysisResponse.status, 503);
+    const payload = await readJson(analysisResponse);
+    assert.equal(payload.error, 'engine_unavailable');
+    assert.doesNotMatch(payload.message, /private|stockfish\.exe/i);
+  }, { engineService });
 });

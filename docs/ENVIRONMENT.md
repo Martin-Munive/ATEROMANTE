@@ -40,6 +40,26 @@ cd PROYECTOS\P-AJEDREZ-GM
 npm run dev:local
 ```
 
+The scripts load `.env` when it exists. Copy `.env.example` and configure only local values.
+
+## External UCI Engine
+ATEROMANTE does not bundle Stockfish. The local API starts the executable configured in:
+
+```text
+ATEROMANTE_UCI_ENGINE_PATH
+```
+
+If the variable is empty, the API searches for `stockfish` in `PATH`.
+
+Optional limits:
+
+```text
+ATEROMANTE_UCI_DEPTH=12
+ATEROMANTE_UCI_TIMEOUT_MS=15000
+```
+
+The analysis endpoint validates the persisted FEN, limits depth to `1-24` and stops an analysis that exceeds the configured timeout. Keeping the engine external avoids committing platform-specific binaries and makes license handling explicit.
+
 Run only the local API:
 
 ```powershell
