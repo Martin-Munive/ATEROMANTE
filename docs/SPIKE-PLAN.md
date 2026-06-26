@@ -60,6 +60,11 @@ Acceptance:
 - A local database stores sessions, games, moves and engine evaluations.
 - Restarting the app does not lose a saved game.
 
+Current evidence:
+- the local API exposes recent persisted sessions;
+- the React UI opens the most recent saved game at startup;
+- the sidebar can reopen recent sessions by game id.
+
 ### 4. Tutor Feedback
 Acceptance:
 - The tutor panel receives position, move and engine context.

@@ -13,7 +13,7 @@ export function App() {
   return (
     <div className="app">
       <AppHeader />
-      <Sidebar />
+      <Sidebar game={game} />
       <main className="workspace">
         <PlayerPanel game={game} />
         <ChessBoard game={game} />

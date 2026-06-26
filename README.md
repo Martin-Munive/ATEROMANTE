@@ -82,6 +82,7 @@ Implementado:
 - adaptador de proceso UCI externo con validacion, timeout y profundidad limitada;
 - endpoint local de analisis con persistencia de evaluacion, mejor jugada y variante principal;
 - panel de motor con estados de carga/error/exito y flecha educativa para la mejor jugada;
+- recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
 - QA visual con Playwright;
@@ -91,7 +92,6 @@ Pendiente:
 
 - validar la integracion contra un binario Stockfish real en los entornos soportados;
 - importador PGN/FEN;
-- recuperacion visual de sesiones existentes;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.

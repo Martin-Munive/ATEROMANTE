@@ -28,7 +28,8 @@ Evidence:
 - build and lint pass;
 - analysis panel models empty, loading, error and success states;
 - best-move arrow derives from the API result;
-- rendered browser QA remains pending because the integrated browser runtime was unavailable in the implementation session.
+- visual recovery lists recent persisted sessions and can reopen them from the sidebar;
+- rendered browser QA passed in desktop, mobile and interaction flows.
 
 Criteria:
 - primary screen is the real tool surface, not a landing page;

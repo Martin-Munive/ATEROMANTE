@@ -60,6 +60,57 @@ test('local API creates a session and persists a legal move', async () => {
   });
 });
 
+test('local API lists recent sessions for visual recovery', async () => {
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    const created = await readJson(createdResponse);
+
+    await fetch(`${baseUrl}/api/games/${created.gameId}/moves`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ from: 'e2', to: 'e4', promotion: 'q' }),
+    });
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=3`);
+    assert.equal(sessionsResponse.status, 200);
+    const payload = await readJson(sessionsResponse);
+    assert.equal(payload.sessions.length, 1);
+    assert.equal(payload.sessions[0].gameId, created.gameId);
+    assert.equal(payload.sessions[0].moveCount, 1);
+    assert.equal(payload.sessions[0].lastMove, 'e4');
+    assert.equal(payload.sessions[0].turn, 'black');
+  });
+});
+
+test('local API recovers or creates one startup session idempotently', async () => {
+  await withServer(async (baseUrl) => {
+    const firstResponse = await fetch(`${baseUrl}/api/sessions/recover-or-create`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    assert.equal(firstResponse.status, 201);
+    const first = await readJson(firstResponse);
+
+    const secondResponse = await fetch(`${baseUrl}/api/sessions/recover-or-create`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    assert.equal(secondResponse.status, 200);
+    const second = await readJson(secondResponse);
+    assert.equal(second.gameId, first.gameId);
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions`);
+    const payload = await readJson(sessionsResponse);
+    assert.equal(payload.sessions.length, 1);
+  });
+});
+
 test('local API rejects illegal moves without mutating the game', async () => {
   await withServer(async (baseUrl) => {
     const createdResponse = await fetch(`${baseUrl}/api/sessions`, {

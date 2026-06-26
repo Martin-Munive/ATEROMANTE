@@ -1,7 +1,16 @@
 import { Gauge, UserRound } from 'lucide-react';
 import { navigation } from '../data/session';
+import type { useChessGame } from '../hooks/useChessGame';
 
-export function Sidebar() {
+interface SidebarProps {
+  game: ReturnType<typeof useChessGame>;
+}
+
+function formatSessionLabel(value: string) {
+  return value.replaceAll('-', ' ');
+}
+
+export function Sidebar({ game }: SidebarProps) {
   return (
     <aside className="sidebar">
       <nav>
@@ -20,7 +29,26 @@ export function Sidebar() {
           <div><dt>ELO Clásico</dt><dd>1921</dd></div>
         </dl>
       </div>
-      <button className="history"><Gauge size={18} />Historial de sesiones</button>
+      <section className="history-panel" aria-label="Historial de sesiones">
+        <div className="history-title"><Gauge size={18} />Historial</div>
+        {game.sessionsLoading && <small>Cargando sesiones...</small>}
+        {game.sessionsError && <small className="history-error">{game.sessionsError}</small>}
+        {!game.sessionsLoading && game.recentSessions.length === 0 && <small>Sin sesiones guardadas.</small>}
+        <div className="history-list">
+          {game.recentSessions.map((session) => (
+            <button
+              className={session.gameId === game.currentGameId ? 'selected-session' : ''}
+              key={session.gameId}
+              onClick={() => game.loadGame(session.gameId)}
+              type="button"
+            >
+              <span>{formatSessionLabel(session.mode)}</span>
+              <strong>{session.moveCount} jugadas</strong>
+              <small>{session.lastMove ? `Última: ${session.lastMove}` : 'Inicio'}</small>
+            </button>
+          ))}
+        </div>
+      </section>
       <small className="version">Versión 0.0.1</small>
     </aside>
   );

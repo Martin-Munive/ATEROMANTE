@@ -339,6 +339,25 @@ export class GameRepository {
       events: this.eventLog.listEventsByGame(gameId),
     };
   }
+
+  listRecentGames(limit = 10) {
+    return this.db.prepare(`
+      SELECT
+        g.*,
+        s.mode,
+        s.station_role,
+        s.status,
+        s.created_at AS session_created_at,
+        s.updated_at AS session_updated_at,
+        COUNT(m.id) AS move_count
+      FROM games g
+      JOIN study_sessions s ON s.id = g.session_id
+      LEFT JOIN moves m ON m.game_id = g.id
+      GROUP BY g.id
+      ORDER BY g.updated_at DESC, g.created_at DESC
+      LIMIT ?
+    `).all(limit);
+  }
 }
 
 export class EngineEvaluationRepository {

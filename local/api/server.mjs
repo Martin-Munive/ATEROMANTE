@@ -75,6 +75,22 @@ function serializeState(state) {
   };
 }
 
+function serializeSessionSummary(session) {
+  return {
+    sessionId: session.sessionId,
+    gameId: session.gameId,
+    mode: session.mode,
+    stationRole: session.stationRole,
+    status: session.status,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    moveCount: session.moveCount,
+    turn: session.turn,
+    result: session.result,
+    lastMove: session.lastMove,
+  };
+}
+
 function serializeEvaluation(row, perspective = 'side-to-move') {
   const score = row.score_mate !== null
     ? { type: 'mate', value: row.score_mate }
@@ -115,6 +131,28 @@ export function createAteromanteApiServer({
 
       if (request.method === 'GET' && url.pathname === '/api/health') {
         sendJson(response, 200, { ok: true });
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/sessions') {
+        const limit = Number.parseInt(url.searchParams.get('limit') ?? '8', 10);
+        const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 25 ? limit : 8;
+        sendJson(response, 200, {
+          sessions: service.listRecentTrainingGames(boundedLimit).map(serializeSessionSummary),
+        });
+        return;
+      }
+
+      if (request.method === 'POST' && url.pathname === '/api/sessions/recover-or-create') {
+        const recent = service.listRecentTrainingGames(1);
+        if (recent[0]) {
+          sendJson(response, 200, serializeState(service.getGameState(recent[0].gameId)));
+          return;
+        }
+
+        const input = await readJson(request);
+        const created = service.createTrainingGame(input);
+        sendJson(response, 201, serializeState(service.getGameState(created.game.id)));
         return;
       }
 

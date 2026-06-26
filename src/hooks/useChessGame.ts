@@ -25,6 +25,24 @@ interface ApiGameState {
   moves: ApiMove[];
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  gameId: string;
+  mode: string;
+  stationRole: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  moveCount: number;
+  turn: 'white' | 'black';
+  result: string;
+  lastMove: string | null;
+}
+
+interface SessionsResponse {
+  sessions: SessionSummary[];
+}
+
 export interface EngineAnalysis {
   id: string;
   gameId: string;
@@ -83,6 +101,15 @@ function turnLabel(turn: 'white' | 'black') {
   return turn === 'white' ? 'Blancas' : 'Negras';
 }
 
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.message ?? payload.error ?? 'request_failed');
+  }
+  return payload;
+}
+
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',
@@ -105,30 +132,84 @@ export function useChessGame() {
   const [analysis, setAnalysis] = useState<EngineAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+
+  async function refreshRecentSessions() {
+    setSessionsLoading(true);
+    setSessionsError(null);
+    try {
+      const payload = await getJson<SessionsResponse>(`${apiBaseUrl}/api/sessions?limit=6`);
+      setRecentSessions(payload.sessions);
+      return payload.sessions;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo cargar el historial.';
+      setSessionsError(message);
+      return [];
+    } finally {
+      setSessionsLoading(false);
+    }
+  }
+
+  async function createNewGame() {
+    return postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
+      mode: 'solo-practice',
+      stationRole: 'hybrid',
+    });
+  }
+
+  async function recoverOrCreateGame() {
+    return postJson<ApiGameState>(`${apiBaseUrl}/api/sessions/recover-or-create`, {
+      mode: 'solo-practice',
+      stationRole: 'hybrid',
+    });
+  }
+
+  async function loadGame(gameId: string) {
+    setLoading(true);
+    setSelectedSquare(null);
+    setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
+    try {
+      const nextState = await getJson<ApiGameState>(`${apiBaseUrl}/api/games/${gameId}`);
+      setState(nextState);
+      await refreshRecentSessions();
+    } catch (error) {
+      setLastError(error instanceof Error ? error.message : 'No se pudo recuperar la sesión.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
 
-    postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
-      mode: 'solo-practice',
-      stationRole: 'hybrid',
-    })
-      .then((nextState) => {
+    async function bootstrapGame() {
+      try {
+        const nextState = await recoverOrCreateGame();
+
         if (active) {
           setState(nextState);
           setLastError(null);
         }
-      })
-      .catch((error) => {
         if (active) {
-          setLastError(`No se pudo conectar con la API local: ${error.message}`);
+          await refreshRecentSessions();
         }
-      })
-      .finally(() => {
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : 'error desconocido';
+          setLastError(`No se pudo conectar con la API local: ${message}`);
+        }
+      } finally {
         if (active) {
           setLoading(false);
         }
-      });
+      }
+    }
+
+    bootstrapGame();
 
     return () => {
       active = false;
@@ -185,6 +266,7 @@ export function useChessGame() {
       setAnalysisError(null);
       setSelectedSquare(null);
       setLastError(null);
+      await refreshRecentSessions();
       return nextState.moves.at(-1) ?? null;
     } catch (error) {
       setLastError(error instanceof Error ? error.message : 'Movimiento rechazado por la API local.');
@@ -200,10 +282,8 @@ export function useChessGame() {
     setAnalysis(null);
     setAnalysisError(null);
     try {
-      setState(await postJson<ApiGameState>(`${apiBaseUrl}/api/sessions`, {
-        mode: 'solo-practice',
-        stationRole: 'hybrid',
-      }));
+      setState(await createNewGame());
+      await refreshRecentSessions();
     } catch (error) {
       setLastError(error instanceof Error ? error.message : 'No se pudo reiniciar la partida.');
     } finally {
@@ -250,8 +330,13 @@ export function useChessGame() {
     analysis,
     analysisLoading,
     analysisError,
+    currentGameId: state?.gameId ?? null,
+    recentSessions,
+    sessionsLoading,
+    sessionsError,
     handleSquare,
     resetGame,
     analyzePosition,
+    loadGame,
   };
 }

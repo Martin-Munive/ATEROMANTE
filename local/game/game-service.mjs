@@ -96,6 +96,25 @@ export class GameService {
     };
   }
 
+  listRecentTrainingGames(limit = 8) {
+    return this.games.listRecentGames(limit).map((game) => {
+      const state = this.getGameState(game.id);
+      return {
+        sessionId: game.session_id,
+        gameId: game.id,
+        mode: game.mode,
+        stationRole: game.station_role,
+        status: game.status,
+        createdAt: game.created_at,
+        updatedAt: game.updated_at,
+        moveCount: game.move_count,
+        turn: state?.turn ?? sideToMove(new Chess(game.initial_fen).turn()),
+        result: state?.result ?? game.result,
+        lastMove: state?.moves.at(-1)?.san ?? null,
+      };
+    });
+  }
+
   applyMove({ sessionId, gameId, from, to, promotion }) {
     const timeline = this.games.getGameTimeline(gameId);
     if (!timeline.game) {
