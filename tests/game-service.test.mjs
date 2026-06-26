@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { closeDatabase, openAteromanteDatabase } from '../local/persistence/database.mjs';
-import { GameService, IllegalMoveError } from '../local/game/game-service.mjs';
+import { GameService, IllegalMoveError, InvalidFenError } from '../local/game/game-service.mjs';
 
 test('GameService creates a persisted training game with initial legal moves', () => {
   const db = openAteromanteDatabase(':memory:');
@@ -19,6 +19,42 @@ test('GameService creates a persisted training game with initial legal moves', (
     'game.created',
     'position.recorded',
   ].join(','));
+
+  closeDatabase(db);
+});
+
+test('GameService creates a training game from an imported FEN', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+  const importedFen = 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 4 3';
+
+  const created = service.createTrainingGame({
+    initialFen: importedFen,
+    source: 'fen-import',
+    mode: 'fen-study',
+  });
+  const timeline = service.getGameState(created.game.id);
+
+  assert.equal(created.game.source, 'fen-import');
+  assert.equal(timeline.game.source, 'fen-import');
+  assert.equal(timeline.fen, importedFen);
+  assert.equal(timeline.turn, 'black');
+  assert.equal(timeline.positions.length, 1);
+  assert.equal(timeline.positions[0].ply, 0);
+  assert.ok(timeline.legalMoves.includes('Nf6'));
+
+  closeDatabase(db);
+});
+
+test('GameService rejects invalid FEN before creating a game', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  assert.throws(
+    () => service.createTrainingGame({ initialFen: 'not-a-fen', source: 'fen-import' }),
+    InvalidFenError,
+  );
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM games').get().total, 0);
 
   closeDatabase(db);
 });

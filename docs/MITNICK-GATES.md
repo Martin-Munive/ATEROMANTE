@@ -53,6 +53,7 @@ Evidence:
 - depth and timeout are bounded;
 - process errors are mapped without leaking local executable paths to the client.
 - `GET /api/engine/status` reports availability, engine name and bounded runtime settings without exposing the configured executable path.
+- FEN import validates input before persistence and creates `fen-study` sessions without exposing filesystem paths or private material.
 
 Criteria:
 - no private material in public project;
@@ -79,14 +80,14 @@ Status: PASS_WITH_RISK for the current technical spike.
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
 - `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
-- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, engine analysis limits and verification.
-- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, services, persistence, tests and extension points.
+- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, engine analysis limits and verification.
+- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN import flow, services, persistence, tests and extension points.
 - `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
 - `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
 
 Residual risk before broader user/developer use:
-- user guide must be expanded when PGN/FEN import, real LLM tutoring and reports exist;
-- developer guide must be expanded when import, tutor, metrics and connector services stabilize;
+- user guide must be expanded when PGN import, real LLM tutoring and reports exist;
+- developer guide must be expanded when PGN import, tutor, metrics and connector services stabilize;
 - release candidates still need a documentation gate checklist tied to the exact release scope.
 
 Criteria:

@@ -111,6 +111,44 @@ test('local API recovers or creates one startup session idempotently', async () 
   });
 });
 
+test('local API imports a FEN position as a study session', async () => {
+  await withServer(async (baseUrl) => {
+    const fen = 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 4 3';
+    const importResponse = await fetch(`${baseUrl}/api/import/fen`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fen }),
+    });
+    assert.equal(importResponse.status, 201);
+    const imported = await readJson(importResponse);
+    assert.equal(imported.fen, fen);
+    assert.equal(imported.turn, 'black');
+    assert.equal(imported.moves.length, 0);
+    assert.ok(imported.events.some((event) => event.eventType === 'game.created'));
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=1`);
+    const sessions = await readJson(sessionsResponse);
+    assert.equal(sessions.sessions[0].mode, 'fen-study');
+    assert.equal(sessions.sessions[0].gameId, imported.gameId);
+  });
+});
+
+test('local API rejects invalid FEN imports without creating a session', async () => {
+  await withServer(async (baseUrl) => {
+    const importResponse = await fetch(`${baseUrl}/api/import/fen`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fen: 'not-a-fen' }),
+    });
+    assert.equal(importResponse.status, 400);
+    assert.equal((await readJson(importResponse)).error, 'invalid_fen');
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions`);
+    const sessions = await readJson(sessionsResponse);
+    assert.equal(sessions.sessions.length, 0);
+  });
+});
+
 test('local API reports external engine status', async () => {
   const engineService = {
     async checkAvailability() {

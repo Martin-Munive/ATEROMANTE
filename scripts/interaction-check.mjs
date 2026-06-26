@@ -94,12 +94,21 @@ async function main() {
     await page.getByText('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-e2e4.png'), fullPage: true });
 
+    const importedFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';
+    await page.getByRole('textbox', { name: 'Posición FEN' }).fill(importedFen);
+    await page.getByRole('button', { name: 'Abrir posición' }).click();
+    await page.getByText('Blancas juegan', { exact: true }).waitFor();
+    await page.getByText(importedFen, { exact: true }).waitFor();
+    await page.getByRole('main').getByText('0 jugadas', { exact: true }).waitFor();
+    await page.screenshot({ path: resolve(artifactsDir, 'interaction-fen-import.png'), fullPage: true });
+
     if (consoleErrors.length > 0) {
       throw new Error(`Console errors detected: ${consoleErrors.join(' | ')}`);
     }
 
     await browser.close();
     console.log(`interaction_artifact=${resolve(artifactsDir, 'interaction-e2e4.png')}`);
+    console.log(`fen_import_artifact=${resolve(artifactsDir, 'interaction-fen-import.png')}`);
   } finally {
     stopProcessTree(server);
     if (serverOutput.length > 0) {

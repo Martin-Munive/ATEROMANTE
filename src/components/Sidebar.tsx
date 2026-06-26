@@ -1,4 +1,5 @@
-import { Gauge, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { FileInput, Gauge, UserRound } from 'lucide-react';
 import { navigation } from '../data/session';
 import type { useChessGame } from '../hooks/useChessGame';
 
@@ -11,6 +12,15 @@ function formatSessionLabel(value: string) {
 }
 
 export function Sidebar({ game }: SidebarProps) {
+  const [fenInput, setFenInput] = useState('');
+
+  async function handleFenImport() {
+    const imported = await game.importFen(fenInput);
+    if (imported) {
+      setFenInput('');
+    }
+  }
+
   return (
     <aside className="sidebar">
       <nav>
@@ -29,6 +39,20 @@ export function Sidebar({ game }: SidebarProps) {
           <div><dt>ELO Clásico</dt><dd>1921</dd></div>
         </dl>
       </div>
+      <section className="fen-import-panel" aria-label="Importar posición FEN">
+        <div className="history-title"><FileInput size={18} />Importar FEN</div>
+        <textarea
+          aria-label="Posición FEN"
+          onChange={(event) => setFenInput(event.target.value)}
+          placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+          rows={4}
+          value={fenInput}
+        />
+        {game.fenImportError && <small className="history-error">{game.fenImportError}</small>}
+        <button disabled={game.fenImportLoading} onClick={handleFenImport} type="button">
+          {game.fenImportLoading ? 'Importando...' : 'Abrir posición'}
+        </button>
+      </section>
       <section className="history-panel" aria-label="Historial de sesiones">
         <div className="history-title"><Gauge size={18} />Historial</div>
         {game.sessionsLoading && <small>Cargando sesiones...</small>}

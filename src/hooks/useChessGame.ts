@@ -145,6 +145,8 @@ export function useChessGame() {
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
   const [engineStatusLoading, setEngineStatusLoading] = useState(true);
+  const [fenImportLoading, setFenImportLoading] = useState(false);
+  const [fenImportError, setFenImportError] = useState<string | null>(null);
 
   async function refreshRecentSessions() {
     setSessionsLoading(true);
@@ -207,6 +209,33 @@ export function useChessGame() {
       setLastError(error instanceof Error ? error.message : 'No se pudo recuperar la sesión.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function importFen(fen: string) {
+    const normalizedInput = fen.trim();
+    if (!normalizedInput) {
+      setFenImportError('Pega una posición FEN antes de importarla.');
+      return null;
+    }
+
+    setFenImportLoading(true);
+    setFenImportError(null);
+    setSelectedSquare(null);
+    setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
+    try {
+      const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/fen`, { fen: normalizedInput });
+      setState(imported);
+      await refreshRecentSessions();
+      return imported;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo importar la posición FEN.';
+      setFenImportError(message);
+      return null;
+    } finally {
+      setFenImportLoading(false);
     }
   }
 
@@ -362,6 +391,8 @@ export function useChessGame() {
     analysisError,
     engineStatus,
     engineStatusLoading,
+    fenImportLoading,
+    fenImportError,
     currentGameId: state?.gameId ?? null,
     recentSessions,
     sessionsLoading,
@@ -370,6 +401,7 @@ export function useChessGame() {
     resetGame,
     analyzePosition,
     refreshEngineStatus,
+    importFen,
     loadGame,
   };
 }

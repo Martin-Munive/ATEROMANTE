@@ -16,6 +16,13 @@ export class IllegalMoveError extends Error {
   }
 }
 
+export class InvalidFenError extends Error {
+  constructor(message = 'FEN is not a valid chess position') {
+    super(message);
+    this.name = 'InvalidFenError';
+  }
+}
+
 function sideToMove(turn) {
   return turn === 'w' ? 'white' : 'black';
 }
@@ -38,6 +45,18 @@ function replayGame(game, moves) {
   return chess;
 }
 
+function normalizeFen(fen) {
+  if (typeof fen !== 'string' || fen.trim() === '' || fen.includes('\n') || fen.includes('\r')) {
+    throw new InvalidFenError('FEN must be a single line chess position');
+  }
+
+  try {
+    return new Chess(fen.trim()).fen();
+  } catch {
+    throw new InvalidFenError();
+  }
+}
+
 export class GameService {
   constructor({
     db,
@@ -56,10 +75,18 @@ export class GameService {
     mode = 'solo-practice',
     stationRole = 'hybrid',
     initialFen = STANDARD_STARTING_FEN,
+    source = 'local',
+    externalId = null,
   } = {}) {
+    const normalizedFen = normalizeFen(initialFen);
     const session = this.sessions.createSession({ studentId, mode, stationRole });
-    const game = this.games.createGame({ sessionId: session.id, initialFen });
-    const chess = new Chess(initialFen);
+    const game = this.games.createGame({
+      sessionId: session.id,
+      initialFen: normalizedFen,
+      source,
+      externalId,
+    });
+    const chess = new Chess(normalizedFen);
     const position = this.games.recordPosition({
       sessionId: session.id,
       gameId: game.id,

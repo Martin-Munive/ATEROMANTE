@@ -4,6 +4,7 @@
 - Create desktop app skeleton.
 - Add chessboard and legal move validation.
 - Export FEN and PGN.
+- Import FEN.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.
@@ -97,7 +98,7 @@
 - Dependency license report.
 
 ## Documentation Backlog
-- Expand user guide after PGN/FEN import.
+- Expand user guide after PGN import.
 - Expand developer guide after tutor and import services stabilize.
 - LLM provider setup guide.
 - Sponsor and citation setup.

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
 import { EngineEvaluationRepository } from '../persistence/repositories.mjs';
-import { GameService, IllegalMoveError } from '../game/game-service.mjs';
+import { GameService, IllegalMoveError, InvalidFenError } from '../game/game-service.mjs';
 import {
   UciEngineInputError,
   UciEngineProtocolError,
@@ -178,6 +178,19 @@ export function createAteromanteApiServer({
         return;
       }
 
+      if (request.method === 'POST' && url.pathname === '/api/import/fen') {
+        const input = await readJson(request);
+        const created = service.createTrainingGame({
+          mode: 'fen-study',
+          stationRole: 'hybrid',
+          initialFen: input.fen,
+          source: 'fen-import',
+        });
+        const state = service.getGameState(created.game.id);
+        sendJson(response, 201, serializeState(state));
+        return;
+      }
+
       const gameMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
       if (request.method === 'GET' && gameMatch) {
         const state = service.getGameState(gameMatch[1]);
@@ -239,6 +252,11 @@ export function createAteromanteApiServer({
     } catch (error) {
       if (error instanceof IllegalMoveError) {
         sendJson(response, 400, { error: 'illegal_move', message: error.message });
+        return;
+      }
+
+      if (error instanceof InvalidFenError) {
+        sendJson(response, 400, { error: 'invalid_fen', message: error.message });
         return;
       }
 

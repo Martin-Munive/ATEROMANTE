@@ -65,6 +65,7 @@ GET  /api/health
 GET  /api/sessions
 POST /api/sessions
 POST /api/sessions/recover-or-create
+POST /api/import/fen
 GET  /api/games/:gameId
 POST /api/games/:gameId/moves
 POST /api/games/:gameId/analysis
@@ -79,6 +80,7 @@ GET  /api/engine/status
 Responsibilities:
 
 - create training games;
+- create FEN study sessions from validated initial positions;
 - replay persisted moves;
 - validate and apply legal moves;
 - derive FEN, PGN, side to move and result;
@@ -140,6 +142,14 @@ Important tables:
 5. API stores the result in `engine_evaluations` and `event_log`.
 6. React renders score, best move, principal variation and arrow.
 
+### FEN Import
+1. User pastes a single-line FEN in the sidebar.
+2. React posts to `POST /api/import/fen`.
+3. `GameService` validates and normalizes the FEN before creating records.
+4. API creates a `fen-study` session and a game with `source='fen-import'`.
+5. The initial position is persisted as ply `0`.
+6. React loads the imported game and refreshes recent sessions.
+
 ## Adding Features
 
 ### PGN/FEN Import
@@ -147,11 +157,12 @@ Add this behind the local API, not directly in React.
 
 Recommended path:
 
-1. parse input in a local service;
-2. validate with `chess.js`;
-3. create a session/game;
-4. persist positions and moves;
-5. return a normal `ApiGameState`.
+1. keep FEN validation in `GameService`;
+2. add a PGN parser behind the API;
+3. validate parsed moves with `chess.js`;
+4. create a session/game;
+5. persist positions and moves;
+6. return a normal `ApiGameState`.
 
 ### Tutor LLM
 Keep provider integration behind a provider contract.
@@ -188,11 +199,12 @@ npm test
 
 Current coverage includes:
 
-- API session creation, movement, recovery and analysis;
+- API session creation, FEN import, movement, recovery and analysis;
 - illegal move rejection;
 - persistence migration and repositories;
 - learning-event traceability;
-- UCI handshake, validation, depth bounds and missing engine errors.
+- UCI handshake, validation, depth bounds and missing engine errors;
+- browser interaction for `e2-e4` and FEN import.
 
 ## Visual QA
 Run:
