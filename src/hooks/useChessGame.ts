@@ -147,6 +147,8 @@ export function useChessGame() {
   const [engineStatusLoading, setEngineStatusLoading] = useState(true);
   const [fenImportLoading, setFenImportLoading] = useState(false);
   const [fenImportError, setFenImportError] = useState<string | null>(null);
+  const [pgnImportLoading, setPgnImportLoading] = useState(false);
+  const [pgnImportError, setPgnImportError] = useState<string | null>(null);
 
   async function refreshRecentSessions() {
     setSessionsLoading(true);
@@ -236,6 +238,33 @@ export function useChessGame() {
       return null;
     } finally {
       setFenImportLoading(false);
+    }
+  }
+
+  async function importPgn(pgn: string) {
+    const normalizedInput = pgn.trim();
+    if (!normalizedInput) {
+      setPgnImportError('Pega una partida PGN antes de importarla.');
+      return null;
+    }
+
+    setPgnImportLoading(true);
+    setPgnImportError(null);
+    setSelectedSquare(null);
+    setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
+    try {
+      const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/pgn`, { pgn: normalizedInput });
+      setState(imported);
+      await refreshRecentSessions();
+      return imported;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo importar la partida PGN.';
+      setPgnImportError(message);
+      return null;
+    } finally {
+      setPgnImportLoading(false);
     }
   }
 
@@ -393,6 +422,8 @@ export function useChessGame() {
     engineStatusLoading,
     fenImportLoading,
     fenImportError,
+    pgnImportLoading,
+    pgnImportError,
     currentGameId: state?.gameId ?? null,
     recentSessions,
     sessionsLoading,
@@ -402,6 +433,7 @@ export function useChessGame() {
     analyzePosition,
     refreshEngineStatus,
     importFen,
+    importPgn,
     loadGame,
   };
 }

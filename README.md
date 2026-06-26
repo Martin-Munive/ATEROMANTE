@@ -85,6 +85,7 @@ Implementado:
 - validacion local contra Stockfish 18 instalado como dependencia externa;
 - panel de motor con disponibilidad, estados de carga/error/exito y flecha educativa para la mejor jugada;
 - importacion FEN desde la barra lateral con validacion previa y sesion `fen-study`;
+- importacion PGN basica desde la barra lateral con persistencia de la linea principal;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -93,7 +94,7 @@ Implementado:
 
 Pendiente:
 
-- importador PGN;
+- soporte PGN avanzado: metadatos, comentarios, NAGs y variantes;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
@@ -221,7 +222,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 1. Conectar `GameService` al tablero visual.
 2. Crear modelo local completo de sesiones, eventos y politicas de ayuda.
 3. Expandir SQLite para importacion PGN, revisiones y reportes.
-4. Importar/exportar PGN.
+4. Ampliar importacion/exportacion PGN.
 5. Construir reportes post-partida.
 6. Agregar tutor LLM configurable por API.
 7. Prototipar servidor/moderador.

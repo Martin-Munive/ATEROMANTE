@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
 import { EngineEvaluationRepository } from '../persistence/repositories.mjs';
-import { GameService, IllegalMoveError, InvalidFenError } from '../game/game-service.mjs';
+import { GameService, IllegalMoveError, InvalidFenError, InvalidPgnError } from '../game/game-service.mjs';
 import {
   UciEngineInputError,
   UciEngineProtocolError,
@@ -191,6 +191,14 @@ export function createAteromanteApiServer({
         return;
       }
 
+      if (request.method === 'POST' && url.pathname === '/api/import/pgn') {
+        const input = await readJson(request);
+        const imported = service.importPgn({ pgn: input.pgn });
+        const state = service.getGameState(imported.game.id);
+        sendJson(response, 201, serializeState(state));
+        return;
+      }
+
       const gameMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
       if (request.method === 'GET' && gameMatch) {
         const state = service.getGameState(gameMatch[1]);
@@ -257,6 +265,11 @@ export function createAteromanteApiServer({
 
       if (error instanceof InvalidFenError) {
         sendJson(response, 400, { error: 'invalid_fen', message: error.message });
+        return;
+      }
+
+      if (error instanceof InvalidPgnError) {
+        sendJson(response, 400, { error: 'invalid_pgn', message: error.message });
         return;
       }
 

@@ -8,11 +8,12 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - persist sessions, games, positions and moves in SQLite;
 - reopen recent sessions from the sidebar history;
 - paste a FEN position and open it as a new study session;
+- paste a basic PGN main line and open it as a persisted study session;
 - request engine analysis through a configured external UCI engine;
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
 
-It does not yet include PGN import, real LLM tutoring, reports, online connectors or networked training rooms.
+It does not yet include advanced PGN metadata handling, PGN variations/comments, real LLM tutoring, reports, online connectors or networked training rooms.
 
 ## Install And Run
 Install dependencies from the project root:
@@ -73,6 +74,15 @@ Click `Abrir posición` to create a new `fen-study` session from that position.
 
 The app validates the FEN before writing to SQLite. Invalid FEN input is rejected and does not create a game.
 
+## Import PGN
+Use the `Importar PGN` panel in the sidebar to paste a basic PGN main line.
+
+Click `Abrir PGN` to create a new `pgn-study` session.
+
+The current importer validates moves with `chess.js`, persists every move and position, and refreshes the session history. Invalid PGN input is rejected before creating a game.
+
+The first PGN slice is intentionally simple: use one main line. Variations, comments, NAGs and richer PGN headers are planned for later import phases.
+
 ## Engine Analysis
 The engine panel can analyze the current persisted position.
 
@@ -116,12 +126,12 @@ npm run qa:interaction
 
 `qa:visual` writes desktop and mobile screenshots to `qa-artifacts/`.
 
-`qa:interaction` opens the app, plays `e2-e4`, imports a FEN position, checks the resulting board state and stores interaction screenshots.
+`qa:interaction` opens the app, plays `e2-e4`, imports FEN and PGN positions, checks the resulting board state and stores interaction screenshots.
 
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import is not implemented.
+- PGN import currently supports a basic main line only.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

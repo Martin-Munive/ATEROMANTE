@@ -102,6 +102,14 @@ async function main() {
     await page.getByRole('main').getByText('0 jugadas', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-fen-import.png'), fullPage: true });
 
+    const importedPgn = '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6';
+    await page.getByRole('textbox', { name: 'Partida PGN' }).fill(importedPgn);
+    await page.getByRole('button', { name: 'Abrir PGN' }).click();
+    await page.getByText('Blancas juegan', { exact: true }).waitFor();
+    await page.getByRole('main').getByText('6 jugadas', { exact: true }).waitFor();
+    await page.getByText('3. Bb5 a6', { exact: false }).waitFor();
+    await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
+
     if (consoleErrors.length > 0) {
       throw new Error(`Console errors detected: ${consoleErrors.join(' | ')}`);
     }
@@ -109,6 +117,7 @@ async function main() {
     await browser.close();
     console.log(`interaction_artifact=${resolve(artifactsDir, 'interaction-e2e4.png')}`);
     console.log(`fen_import_artifact=${resolve(artifactsDir, 'interaction-fen-import.png')}`);
+    console.log(`pgn_import_artifact=${resolve(artifactsDir, 'interaction-pgn-import.png')}`);
   } finally {
     stopProcessTree(server);
     if (serverOutput.length > 0) {

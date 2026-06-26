@@ -13,11 +13,19 @@ function formatSessionLabel(value: string) {
 
 export function Sidebar({ game }: SidebarProps) {
   const [fenInput, setFenInput] = useState('');
+  const [pgnInput, setPgnInput] = useState('');
 
   async function handleFenImport() {
     const imported = await game.importFen(fenInput);
     if (imported) {
       setFenInput('');
+    }
+  }
+
+  async function handlePgnImport() {
+    const imported = await game.importPgn(pgnInput);
+    if (imported) {
+      setPgnInput('');
     }
   }
 
@@ -51,6 +59,20 @@ export function Sidebar({ game }: SidebarProps) {
         {game.fenImportError && <small className="history-error">{game.fenImportError}</small>}
         <button disabled={game.fenImportLoading} onClick={handleFenImport} type="button">
           {game.fenImportLoading ? 'Importando...' : 'Abrir posición'}
+        </button>
+      </section>
+      <section className="pgn-import-panel" aria-label="Importar partida PGN">
+        <div className="history-title"><FileInput size={18} />Importar PGN</div>
+        <textarea
+          aria-label="Partida PGN"
+          onChange={(event) => setPgnInput(event.target.value)}
+          placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6"
+          rows={5}
+          value={pgnInput}
+        />
+        {game.pgnImportError && <small className="history-error">{game.pgnImportError}</small>}
+        <button disabled={game.pgnImportLoading} onClick={handlePgnImport} type="button">
+          {game.pgnImportLoading ? 'Importando...' : 'Abrir PGN'}
         </button>
       </section>
       <section className="history-panel" aria-label="Historial de sesiones">

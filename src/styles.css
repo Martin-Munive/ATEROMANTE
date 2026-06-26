@@ -208,7 +208,6 @@ button {
 }
 
 .profile-panel {
-  margin-top: auto;
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
@@ -248,7 +247,8 @@ button {
 }
 
 .history-panel,
-.fen-import-panel {
+.fen-import-panel,
+.pgn-import-panel {
   border: 1px solid var(--line);
   background: #111412;
   display: grid;
@@ -256,7 +256,8 @@ button {
   padding: 12px;
 }
 
-.fen-import-panel textarea {
+.fen-import-panel textarea,
+.pgn-import-panel textarea {
   width: 100%;
   min-height: 88px;
   resize: vertical;
@@ -268,7 +269,8 @@ button {
   padding: 9px;
 }
 
-.fen-import-panel button {
+.fen-import-panel button,
+.pgn-import-panel button {
   justify-content: center;
   min-height: 36px;
   border: 1px solid #8b6936;
@@ -277,7 +279,8 @@ button {
   font-weight: 700;
 }
 
-.fen-import-panel button:disabled {
+.fen-import-panel button:disabled,
+.pgn-import-panel button:disabled {
   cursor: wait;
   opacity: 0.58;
 }

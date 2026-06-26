@@ -23,6 +23,13 @@ export class InvalidFenError extends Error {
   }
 }
 
+export class InvalidPgnError extends Error {
+  constructor(message = 'PGN is not a valid chess game') {
+    super(message);
+    this.name = 'InvalidPgnError';
+  }
+}
+
 function sideToMove(turn) {
   return turn === 'w' ? 'white' : 'black';
 }
@@ -54,6 +61,27 @@ function normalizeFen(fen) {
     return new Chess(fen.trim()).fen();
   } catch {
     throw new InvalidFenError();
+  }
+}
+
+function parsePgn(pgn) {
+  if (typeof pgn !== 'string' || pgn.trim() === '') {
+    throw new InvalidPgnError('PGN input is required');
+  }
+
+  try {
+    const chess = new Chess();
+    chess.loadPgn(pgn.trim(), { strict: false });
+    const moves = chess.history();
+    if (moves.length === 0) {
+      throw new InvalidPgnError('PGN must contain at least one move');
+    }
+    return moves;
+  } catch (error) {
+    if (error instanceof InvalidPgnError) {
+      throw error;
+    }
+    throw new InvalidPgnError();
   }
 }
 
@@ -103,6 +131,84 @@ export class GameService {
       fen: chess.fen(),
       pgn: chess.pgn(),
       legalMoves: chess.moves(),
+    };
+  }
+
+  importPgn({
+    pgn,
+    studentId = null,
+    mode = 'pgn-study',
+    stationRole = 'hybrid',
+    source = 'pgn-import',
+    externalId = null,
+  } = {}) {
+    const sanMoves = parsePgn(pgn);
+    const created = this.createTrainingGame({
+      studentId,
+      mode,
+      stationRole,
+      source,
+      externalId,
+    });
+    const chess = new Chess(created.game.initial_fen);
+    let positionBefore = created.currentPosition;
+    let linkedMove = null;
+
+    for (const san of sanMoves) {
+      const plyBefore = chess.history().length;
+      const applied = chess.move(san);
+      if (!applied) {
+        throw new InvalidPgnError();
+      }
+      const plyAfter = plyBefore + 1;
+      const move = this.games.appendMove({
+        sessionId: created.session.id,
+        gameId: created.game.id,
+        positionBeforeId: positionBefore.id,
+        ply: plyAfter,
+        san: applied.san,
+        uci: applied.lan,
+        fromSquare: applied.from,
+        toSquare: applied.to,
+        piece: applied.piece,
+        capturedPiece: applied.captured,
+        promotion: applied.promotion,
+        isCheck: chess.inCheck(),
+        isMate: chess.isCheckmate(),
+        classification: 'unknown',
+      });
+      const positionAfter = this.games.recordPosition({
+        sessionId: created.session.id,
+        gameId: created.game.id,
+        moveId: move.id,
+        fen: chess.fen(),
+        ply: plyAfter,
+        sideToMove: sideToMove(chess.turn()),
+        phase: 'unknown',
+      });
+      linkedMove = this.games.linkMovePositionAfter({
+        moveId: move.id,
+        positionAfterId: positionAfter.id,
+      });
+      positionBefore = positionAfter;
+    }
+
+    const updatedGame = this.games.updateGameNotation({
+      gameId: created.game.id,
+      pgn: chess.pgn(),
+      result: resultFromChess(chess),
+    });
+
+    return {
+      session: created.session,
+      game: updatedGame,
+      lastMove: linkedMove,
+      currentPosition: positionBefore,
+      fen: chess.fen(),
+      pgn: chess.pgn(),
+      turn: sideToMove(chess.turn()),
+      legalMoves: chess.moves(),
+      result: resultFromChess(chess),
     };
   }
 

@@ -5,13 +5,14 @@
 - Add chessboard and legal move validation.
 - Export FEN and PGN.
 - Import FEN.
+- Import basic PGN main line.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.
 - Draw basic educational overlays.
 
 ## MVP 1 - Post-Game Tutor
-- Import PGN.
+- Preserve PGN headers, comments, NAGs and variations.
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.
@@ -98,7 +99,7 @@
 - Dependency license report.
 
 ## Documentation Backlog
-- Expand user guide after PGN import.
+- Expand user guide after advanced PGN import.
 - Expand developer guide after tutor and import services stabilize.
 - LLM provider setup guide.
 - Sponsor and citation setup.

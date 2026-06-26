@@ -66,6 +66,7 @@ GET  /api/sessions
 POST /api/sessions
 POST /api/sessions/recover-or-create
 POST /api/import/fen
+POST /api/import/pgn
 GET  /api/games/:gameId
 POST /api/games/:gameId/moves
 POST /api/games/:gameId/analysis
@@ -81,6 +82,7 @@ Responsibilities:
 
 - create training games;
 - create FEN study sessions from validated initial positions;
+- create PGN study sessions from parsed main-line moves;
 - replay persisted moves;
 - validate and apply legal moves;
 - derive FEN, PGN, side to move and result;
@@ -150,6 +152,20 @@ Important tables:
 5. The initial position is persisted as ply `0`.
 6. React loads the imported game and refreshes recent sessions.
 
+### PGN Import
+1. User pastes PGN text in the sidebar.
+2. React posts to `POST /api/import/pgn`.
+3. `GameService` parses the PGN with `chess.js` before creating records.
+4. API creates a `pgn-study` session and a game with `source='pgn-import'`.
+5. The importer replays the main line, persists every move and position, and updates generated PGN.
+6. React loads the imported game and refreshes recent sessions.
+
+Current scope:
+
+- basic main-line PGN;
+- no dedicated metadata table yet;
+- no preserved comments, variations or NAGs yet.
+
 ## Adding Features
 
 ### PGN/FEN Import
@@ -158,11 +174,12 @@ Add this behind the local API, not directly in React.
 Recommended path:
 
 1. keep FEN validation in `GameService`;
-2. add a PGN parser behind the API;
-3. validate parsed moves with `chess.js`;
-4. create a session/game;
-5. persist positions and moves;
-6. return a normal `ApiGameState`.
+2. expand PGN metadata extraction behind the API;
+3. preserve comments, NAGs and variations in dedicated structures;
+4. validate parsed moves with `chess.js`;
+5. create a session/game;
+6. persist positions and moves;
+7. return a normal `ApiGameState`.
 
 ### Tutor LLM
 Keep provider integration behind a provider contract.
@@ -199,12 +216,12 @@ npm test
 
 Current coverage includes:
 
-- API session creation, FEN import, movement, recovery and analysis;
+- API session creation, FEN import, PGN import, movement, recovery and analysis;
 - illegal move rejection;
 - persistence migration and repositories;
 - learning-event traceability;
 - UCI handshake, validation, depth bounds and missing engine errors;
-- browser interaction for `e2-e4` and FEN import.
+- browser interaction for `e2-e4`, FEN import and PGN import.
 
 ## Visual QA
 Run:

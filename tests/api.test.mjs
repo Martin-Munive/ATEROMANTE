@@ -149,6 +149,44 @@ test('local API rejects invalid FEN imports without creating a session', async (
   });
 });
 
+test('local API imports a basic PGN as a study session', async () => {
+  await withServer(async (baseUrl) => {
+    const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ pgn: '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6' }),
+    });
+    assert.equal(importResponse.status, 201);
+    const imported = await readJson(importResponse);
+    assert.equal(imported.moves.length, 6);
+    assert.equal(imported.moves[0].san, 'e4');
+    assert.equal(imported.moves[5].san, 'a6');
+    assert.match(imported.pgn, /1\. e4 e5 2\. Nf3 Nc6 3\. Bb5 a6/);
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=1`);
+    const sessions = await readJson(sessionsResponse);
+    assert.equal(sessions.sessions[0].mode, 'pgn-study');
+    assert.equal(sessions.sessions[0].moveCount, 6);
+    assert.equal(sessions.sessions[0].gameId, imported.gameId);
+  });
+});
+
+test('local API rejects invalid PGN imports without creating a session', async () => {
+  await withServer(async (baseUrl) => {
+    const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ pgn: '1. e4 e5 2. e5' }),
+    });
+    assert.equal(importResponse.status, 400);
+    assert.equal((await readJson(importResponse)).error, 'invalid_pgn');
+
+    const sessionsResponse = await fetch(`${baseUrl}/api/sessions`);
+    const sessions = await readJson(sessionsResponse);
+    assert.equal(sessions.sessions.length, 0);
+  });
+});
+
 test('local API reports external engine status', async () => {
   const engineService = {
     async checkAvailability() {
