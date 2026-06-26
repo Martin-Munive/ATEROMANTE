@@ -72,6 +72,25 @@ Criteria:
 - warn about P2P metadata/IP exposure if WebRTC is used;
 - avoid network code before the local session/event model exists.
 
+### Documentation Gate
+Status: BLOCKED for release; PASS_WITH_RISK for current technical spike.
+
+Evidence:
+- README covers install, current capabilities, verification commands and limitations.
+- `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
+
+Missing before broader user/developer use:
+- dedicated user guide for first run, engine setup, session recovery, PGN/FEN import and tutor modes;
+- dedicated developer guide explaining folders, API contracts, database schema, services, tests and extension points;
+- anti-cheating and privacy guide for assisted training and future human-vs-human modes;
+- documentation gate checklist in every release candidate.
+
+Criteria:
+- a new user can install and run the primary flow from public docs;
+- a new developer can understand the app structure and add a bounded feature without reading internal BRAIN notes;
+- public docs do not include prompts, handoffs, private material or internal planning;
+- external dependencies such as Stockfish and LLM providers have setup and troubleshooting guidance.
+
 ### Supply Chain Gate
 Status: PASS_WITH_RISK.
 
