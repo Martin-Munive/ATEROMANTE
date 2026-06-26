@@ -81,7 +81,8 @@ Implementado:
 - `GameService` local con `chess.js` para reglas, FEN, PGN y movimientos legales;
 - adaptador de proceso UCI externo con validacion, timeout y profundidad limitada;
 - endpoint local de analisis con persistencia de evaluacion, mejor jugada y variante principal;
-- panel de motor con estados de carga/error/exito y flecha educativa para la mejor jugada;
+- endpoint local de estado del motor UCI sin exponer rutas locales;
+- panel de motor con disponibilidad, estados de carga/error/exito y flecha educativa para la mejor jugada;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -90,7 +91,7 @@ Implementado:
 
 Pendiente:
 
-- validar la integracion contra un binario Stockfish real en los entornos soportados;
+- instalar o apuntar un binario Stockfish real y validar analisis end-to-end en los entornos soportados;
 - importador PGN/FEN;
 - tutor LLM configurable por API;
 - servidor/moderador real;

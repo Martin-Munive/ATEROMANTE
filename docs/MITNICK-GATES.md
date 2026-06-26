@@ -52,6 +52,7 @@ Evidence:
 - FEN comes from persisted deterministic game state and is validated;
 - depth and timeout are bounded;
 - process errors are mapped without leaking local executable paths to the client.
+- `GET /api/engine/status` reports availability, engine name and bounded runtime settings without exposing the configured executable path.
 
 Criteria:
 - no private material in public project;

@@ -68,6 +68,7 @@ POST /api/sessions/recover-or-create
 GET  /api/games/:gameId
 POST /api/games/:gameId/moves
 POST /api/games/:gameId/analysis
+GET  /api/engine/status
 ```
 
 `recover-or-create` is intentionally idempotent for startup. It prevents duplicate initial sessions in React StrictMode.
@@ -94,6 +95,7 @@ Responsibilities:
 - bound depth and timeout;
 - run UCI handshake;
 - parse score, best move and principal variation;
+- check external engine availability through a bounded depth-1 probe;
 - map missing or broken engines to controlled errors.
 
 The executable path comes from server configuration, never from HTTP input.

@@ -48,6 +48,14 @@ where.exe stockfish
 
 If the command cannot find Stockfish, set `ATEROMANTE_UCI_ENGINE_PATH` to the absolute executable path.
 
+When the local API is running, ATEROMANTE also exposes:
+
+```text
+GET /api/engine/status
+```
+
+The endpoint reports whether the engine is available, the detected engine name and the bounded runtime settings. It does not expose the configured executable path.
+
 ## How Analysis Works
 1. The UI requests analysis for the current game.
 2. The API reconstructs the persisted FEN.
