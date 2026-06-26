@@ -82,6 +82,7 @@ Implementado:
 - adaptador de proceso UCI externo con validacion, timeout y profundidad limitada;
 - endpoint local de analisis con persistencia de evaluacion, mejor jugada y variante principal;
 - endpoint local de estado del motor UCI sin exponer rutas locales;
+- validacion local contra Stockfish 18 instalado como dependencia externa;
 - panel de motor con disponibilidad, estados de carga/error/exito y flecha educativa para la mejor jugada;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
@@ -91,7 +92,6 @@ Implementado:
 
 Pendiente:
 
-- instalar o apuntar un binario Stockfish real y validar analisis end-to-end en los entornos soportados;
 - importador PGN/FEN;
 - tutor LLM configurable por API;
 - servidor/moderador real;
@@ -212,7 +212,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - No incluye bases de datos de terceros.
 - No debe usarse para asistencia oculta en partidas competitivas.
 - Stockfish no se distribuye dentro del repositorio: el usuario debe configurar un ejecutable UCI externo.
-- La integracion UCI esta verificada con un motor controlado de pruebas; falta la validacion contra Stockfish real en cada plataforma soportada.
+- La integracion UCI esta verificada con un motor controlado de pruebas y con Stockfish 18 en Windows; falta validacion amplia por plataforma soportada.
 - Las funciones LLM reales todavia no estan conectadas a proveedores externos.
 
 ## Roadmap Publico
@@ -220,12 +220,11 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 1. Conectar `GameService` al tablero visual.
 2. Crear modelo local completo de sesiones, eventos y politicas de ayuda.
 3. Expandir SQLite para importacion PGN, revisiones y reportes.
-4. Conectar Stockfish/UCI.
-5. Importar/exportar PGN/FEN.
-6. Construir reportes post-partida.
-7. Agregar tutor LLM configurable por API.
-8. Prototipar servidor/moderador.
-9. Agregar busqueda por temas, aperturas y posiciones.
+4. Importar/exportar PGN/FEN.
+5. Construir reportes post-partida.
+6. Agregar tutor LLM configurable por API.
+7. Prototipar servidor/moderador.
+8. Agregar busqueda por temas, aperturas y posiciones.
 
 ## Autor
 

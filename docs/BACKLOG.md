@@ -4,7 +4,6 @@
 - Create desktop app skeleton.
 - Add chessboard and legal move validation.
 - Export FEN and PGN.
-- Connect to UCI engine.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.

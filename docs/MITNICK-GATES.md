@@ -101,10 +101,12 @@ Status: PASS_WITH_RISK.
 Evidence:
 - no new npm dependency was added;
 - Stockfish is not bundled;
-- an external executable must be configured by the user.
+- Stockfish 18 was installed externally through `winget`;
+- `winget` verified the installer hash;
+- the app resolves `stockfish` through PATH and reports `Stockfish 18` through `GET /api/engine/status`.
 
 Residual risk:
-- provenance, checksum, license notice and platform compatibility of the selected Stockfish binary must be verified before distribution guidance is finalized.
+- platform compatibility beyond the validated Windows machine must be checked before distribution guidance is finalized.
 
 Criteria:
 - dependency licenses reviewed;
