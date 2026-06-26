@@ -29,6 +29,22 @@ test('UciEngineService completes the UCI handshake and parses an analysis', asyn
   assert.equal(result.perspective, 'side-to-move');
 });
 
+test('UciEngineService checks external engine availability', async () => {
+  const service = new UciEngineService({
+    command: process.execPath,
+    args: [fakeEngine],
+    defaultDepth: 8,
+    timeoutMs: 2_000,
+  });
+
+  const status = await service.checkAvailability();
+
+  assert.equal(status.available, true);
+  assert.equal(status.engineName, 'Ateromante Test Engine');
+  assert.equal(status.defaultDepth, 8);
+  assert.equal(status.timeoutMs, 2_000);
+});
+
 test('UciEngineService rejects invalid FEN and unsafe multiline input', () => {
   const service = new UciEngineService({ command: process.execPath, args: [fakeEngine] });
 
@@ -63,4 +79,18 @@ test('UciEngineService reports a missing external engine', async () => {
     }),
     UciEngineUnavailableError,
   );
+});
+
+test('UciEngineService availability check returns unavailable for missing engines', async () => {
+  const service = new UciEngineService({
+    command: 'ateromante-engine-that-does-not-exist',
+    timeoutMs: 1_000,
+  });
+
+  const status = await service.checkAvailability();
+
+  assert.equal(status.available, false);
+  assert.equal(status.engineName, null);
+  assert.equal(status.defaultDepth, 12);
+  assert.equal(status.timeoutMs, 1_000);
 });

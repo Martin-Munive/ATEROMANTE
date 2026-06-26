@@ -4,6 +4,7 @@ import { Chess } from 'chess.js';
 const DEFAULT_DEPTH = 12;
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_DEPTH = 24;
+const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export class UciEngineUnavailableError extends Error {
   constructor(message = 'UCI engine is not available') {
@@ -84,6 +85,30 @@ export class UciEngineService {
     this.args = args;
     this.defaultDepth = boundedInteger(defaultDepth, DEFAULT_DEPTH, 1, MAX_DEPTH, 'depth');
     this.timeoutMs = boundedInteger(timeoutMs, DEFAULT_TIMEOUT_MS, 500, 60_000, 'timeoutMs');
+  }
+
+  async checkAvailability() {
+    try {
+      const result = await this.analyze({ fen: STARTING_FEN, depth: 1 });
+      return {
+        available: true,
+        configured: Boolean(process.env.ATEROMANTE_UCI_ENGINE_PATH),
+        engineName: result.engineName,
+        defaultDepth: this.defaultDepth,
+        timeoutMs: this.timeoutMs,
+      };
+    } catch (error) {
+      if (error instanceof UciEngineUnavailableError || error instanceof UciEngineProtocolError) {
+        return {
+          available: false,
+          configured: Boolean(process.env.ATEROMANTE_UCI_ENGINE_PATH),
+          engineName: null,
+          defaultDepth: this.defaultDepth,
+          timeoutMs: this.timeoutMs,
+        };
+      }
+      throw error;
+    }
   }
 
   analyze({ fen, depth = this.defaultDepth } = {}) {

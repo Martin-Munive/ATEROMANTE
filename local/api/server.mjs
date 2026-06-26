@@ -134,6 +134,20 @@ export function createAteromanteApiServer({
         return;
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/engine/status') {
+        const status = typeof engineService.checkAvailability === 'function'
+          ? await engineService.checkAvailability()
+          : {
+              available: false,
+              configured: false,
+              engineName: null,
+              defaultDepth: null,
+              timeoutMs: null,
+            };
+        sendJson(response, 200, status);
+        return;
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/sessions') {
         const limit = Number.parseInt(url.searchParams.get('limit') ?? '8', 10);
         const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 25 ? limit : 8;

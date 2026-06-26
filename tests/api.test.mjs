@@ -111,6 +111,32 @@ test('local API recovers or creates one startup session idempotently', async () 
   });
 });
 
+test('local API reports external engine status', async () => {
+  const engineService = {
+    async checkAvailability() {
+      return {
+        available: true,
+        configured: true,
+        engineName: 'Injected Status Engine',
+        defaultDepth: 14,
+        timeoutMs: 5_000,
+      };
+    },
+  };
+
+  await withServer(async (baseUrl) => {
+    const statusResponse = await fetch(`${baseUrl}/api/engine/status`);
+    assert.equal(statusResponse.status, 200);
+    assert.deepEqual(await readJson(statusResponse), {
+      available: true,
+      configured: true,
+      engineName: 'Injected Status Engine',
+      defaultDepth: 14,
+      timeoutMs: 5_000,
+    });
+  }, { engineService });
+});
+
 test('local API rejects illegal moves without mutating the game', async () => {
   await withServer(async (baseUrl) => {
     const createdResponse = await fetch(`${baseUrl}/api/sessions`, {

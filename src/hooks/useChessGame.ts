@@ -61,6 +61,14 @@ export interface EngineAnalysis {
   createdAt: string;
 }
 
+export interface EngineStatus {
+  available: boolean;
+  configured: boolean;
+  engineName: string | null;
+  defaultDepth: number | null;
+  timeoutMs: number | null;
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
@@ -135,6 +143,8 @@ export function useChessGame() {
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
+  const [engineStatusLoading, setEngineStatusLoading] = useState(true);
 
   async function refreshRecentSessions() {
     setSessionsLoading(true);
@@ -164,6 +174,23 @@ export function useChessGame() {
       mode: 'solo-practice',
       stationRole: 'hybrid',
     });
+  }
+
+  async function refreshEngineStatus() {
+    setEngineStatusLoading(true);
+    try {
+      setEngineStatus(await getJson<EngineStatus>(`${apiBaseUrl}/api/engine/status`));
+    } catch {
+      setEngineStatus({
+        available: false,
+        configured: false,
+        engineName: null,
+        defaultDepth: null,
+        timeoutMs: null,
+      });
+    } finally {
+      setEngineStatusLoading(false);
+    }
   }
 
   async function loadGame(gameId: string) {
@@ -196,6 +223,9 @@ export function useChessGame() {
         }
         if (active) {
           await refreshRecentSessions();
+        }
+        if (active) {
+          await refreshEngineStatus();
         }
       } catch (error) {
         if (active) {
@@ -330,6 +360,8 @@ export function useChessGame() {
     analysis,
     analysisLoading,
     analysisError,
+    engineStatus,
+    engineStatusLoading,
     currentGameId: state?.gameId ?? null,
     recentSessions,
     sessionsLoading,
@@ -337,6 +369,7 @@ export function useChessGame() {
     handleSquare,
     resetGame,
     analyzePosition,
+    refreshEngineStatus,
     loadGame,
   };
 }

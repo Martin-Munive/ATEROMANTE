@@ -50,12 +50,23 @@ export function EnginePanel({ game }: EnginePanelProps) {
     : game.analysis?.score.value === null || game.analysis?.score.value === undefined
       ? '--'
       : `${game.analysis.score.value >= 0 ? '+' : ''}${(game.analysis.score.value / 100).toFixed(2)}`;
+  const engineLabel = game.analysis?.engineName
+    ?? game.engineStatus?.engineName
+    ?? 'Motor UCI externo';
+  const statusLabel = game.engineStatusLoading
+    ? 'Comprobando motor...'
+    : game.engineStatus?.available
+      ? 'Motor disponible'
+      : 'Motor pendiente';
 
   return (
     <section className="bottom-panel engine-panel">
       <div className="panel-heading">
         <span>Evaluación del motor</span>
-        <strong>{game.analysis?.engineName ?? 'Motor UCI externo'}</strong>
+        <strong>{engineLabel}</strong>
+      </div>
+      <div className={`engine-status ${game.engineStatus?.available ? 'ready' : 'pending'}`}>
+        {statusLabel}
       </div>
       <div className="chart">
         <div className="score">{score}</div>
