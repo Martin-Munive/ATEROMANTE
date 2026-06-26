@@ -73,17 +73,20 @@ Criteria:
 - avoid network code before the local session/event model exists.
 
 ### Documentation Gate
-Status: BLOCKED for release; PASS_WITH_RISK for current technical spike.
+Status: PASS_WITH_RISK for the current technical spike.
 
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
 - `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
+- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, engine analysis limits and verification.
+- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, services, persistence, tests and extension points.
+- `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
+- `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
 
-Missing before broader user/developer use:
-- dedicated user guide for first run, engine setup, session recovery, PGN/FEN import and tutor modes;
-- dedicated developer guide explaining folders, API contracts, database schema, services, tests and extension points;
-- anti-cheating and privacy guide for assisted training and future human-vs-human modes;
-- documentation gate checklist in every release candidate.
+Residual risk before broader user/developer use:
+- user guide must be expanded when PGN/FEN import, real LLM tutoring and reports exist;
+- developer guide must be expanded when import, tutor, metrics and connector services stabilize;
+- release candidates still need a documentation gate checklist tied to the exact release scope.
 
 Criteria:
 - a new user can install and run the primary flow from public docs;

@@ -194,12 +194,16 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 - [Backlog](docs/BACKLOG.md)
 - [Client/server model](docs/CLIENT-SERVER-MODEL.md)
 - [Data traceability](docs/DATA-TRACEABILITY.md)
+- [Developer guide](docs/DEVELOPER-GUIDE.md)
+- [Engine setup](docs/ENGINE-SETUP.md)
 - [Environment](docs/ENVIRONMENT.md)
 - [GitHub settings](docs/GITHUB-SETTINGS.md)
 - [LLM providers](docs/LLM-PROVIDERS.md)
 - [MITNICK gates](docs/MITNICK-GATES.md)
+- [Privacy and anti-abuse](docs/PRIVACY-AND-ANTIABUSE.md)
 - [Renaming protocol](docs/RENAMING-PROTOCOL.md)
 - [Spike plan](docs/SPIKE-PLAN.md)
+- [User guide](docs/USER-GUIDE.md)
 
 ## Limites
 

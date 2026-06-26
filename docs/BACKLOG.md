@@ -98,10 +98,9 @@
 - Dependency license report.
 
 ## Documentation Backlog
-- Installation guide.
-- Engine setup guide.
+- Expand user guide after PGN/FEN import.
+- Expand developer guide after tutor and import services stabilize.
 - LLM provider setup guide.
 - Sponsor and citation setup.
-- Privacy guide.
 - Contribution guide.
 - License and third-party notices.

@@ -1,0 +1,119 @@
+# User Guide
+
+## What ATEROMANTE Does Today
+ATEROMANTE is currently a local technical spike for chess training. It lets you:
+
+- open a local training board;
+- move pieces with legal-move validation;
+- persist sessions, games, positions and moves in SQLite;
+- reopen recent sessions from the sidebar history;
+- request engine analysis through a configured external UCI engine;
+- see the engine score, best move, principal variation and a visual best-move arrow;
+- run local QA commands to verify the app.
+
+It does not yet include PGN/FEN import, real LLM tutoring, reports, online connectors or networked training rooms.
+
+## Install And Run
+Install dependencies from the project root:
+
+```powershell
+npm install
+```
+
+Run the full local development flow with UI, API and SQLite:
+
+```powershell
+npm run dev:local
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+Run only the UI when you do not need persistence or the API:
+
+```powershell
+npm run dev
+```
+
+Run only the local API:
+
+```powershell
+npm run api
+```
+
+## First Session
+When the app opens, it tries to recover the most recent saved game. If no saved game exists, it creates a new local training session.
+
+Use the board by clicking:
+
+1. the piece square;
+2. a highlighted legal target square.
+
+Illegal moves are rejected by the deterministic chess service, not by the tutor panel.
+
+## Session History
+The sidebar history lists recent persisted games.
+
+Each item shows:
+
+- training mode;
+- move count;
+- last move or `Inicio`.
+
+Click a history item to reopen that saved game. This reloads the position, PGN, move list and legal move state from the local API.
+
+## Engine Analysis
+The engine panel can analyze the current persisted position.
+
+Before using real analysis, configure an external UCI engine. ATEROMANTE does not bundle Stockfish.
+
+See [Engine Setup](ENGINE-SETUP.md).
+
+If no engine is configured, the UI shows an engine-unavailable message. That is expected during the spike.
+
+## Tutor Panel
+The tutor panel currently explains deterministic game state and simulated training context. Real LLM provider integration is not implemented yet.
+
+The tutor must not validate chess legality. Legal moves, FEN and PGN come from `chess.js` through the local game service.
+
+## Local Data
+By default, runtime data is stored under:
+
+```text
+data/ateromante.db
+```
+
+Generated local database files are ignored by Git.
+
+You can override the database path:
+
+```powershell
+$env:ATEROMANTE_DB_PATH="C:\path\to\ateromante.db"
+npm run dev:local
+```
+
+## Verification
+Run:
+
+```powershell
+npm test
+npm run build
+npm run lint
+npm run qa:visual
+npm run qa:interaction
+```
+
+`qa:visual` writes desktop and mobile screenshots to `qa-artifacts/`.
+
+`qa:interaction` opens the app, plays `e2-e4`, checks the resulting FEN and stores an interaction screenshot.
+
+## Current Limits
+- No Stockfish binary is included.
+- Real Stockfish validation is still pending in local environments.
+- PGN/FEN import is not implemented.
+- LLM providers are not connected.
+- Human-vs-human training rooms are design-stage only.
+- ATEROMANTE must not be used as hidden live assistance in competitive games.
