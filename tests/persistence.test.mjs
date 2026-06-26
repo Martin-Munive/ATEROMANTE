@@ -36,6 +36,7 @@ test('migration creates the normalized persistence core', () => {
     'learning_events',
     'match_policies',
     'moves',
+    'pgn_headers',
     'positions',
     'review_items',
     'study_sessions',
@@ -91,9 +92,21 @@ test('repositories persist a session, game, positions, move and timeline events'
     sideToMove: 'black',
     phase: 'opening',
   });
+  const headers = games.recordPgnHeaders({
+    gameId: game.id,
+    headers: {
+      Event: 'Training Match',
+      Site: 'Bogota',
+      White: 'Alice',
+      Black: 'Bob',
+      Result: '*',
+    },
+  });
 
   const timeline = games.getGameTimeline(game.id);
   assert.equal(timeline.game.id, game.id);
+  assert.equal(headers.headers.Event, 'Training Match');
+  assert.equal(timeline.pgnHeaders.headers.White, 'Alice');
   assert.equal(timeline.moves[0].san, 'e4');
   assert.equal(timeline.positions.length, 2);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [

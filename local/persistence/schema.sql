@@ -60,6 +60,19 @@ CREATE TABLE IF NOT EXISTS games (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS pgn_headers (
+  game_id TEXT PRIMARY KEY REFERENCES games(id) ON DELETE CASCADE,
+  headers_json TEXT NOT NULL DEFAULT '{}',
+  event TEXT,
+  site TEXT,
+  date TEXT,
+  round TEXT,
+  white TEXT,
+  black TEXT,
+  result TEXT,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS positions (
   id TEXT PRIMARY KEY,
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,

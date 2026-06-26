@@ -84,6 +84,35 @@ test('GameService imports a basic PGN main line', () => {
   closeDatabase(db);
 });
 
+test('GameService preserves PGN headers and imported result', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: [
+      '[Event "Training Match"]',
+      '[Site "Bogota"]',
+      '[Date "2026.06.26"]',
+      '[Round "1"]',
+      '[White "Alice"]',
+      '[Black "Bob"]',
+      '[Result "1-0"]',
+      '',
+      '1. e4 e5 2. Nf3 Nc6 1-0',
+    ].join('\n'),
+  });
+  const timeline = service.getGameState(imported.game.id);
+
+  assert.equal(timeline.result, '1-0');
+  assert.equal(timeline.pgnHeaders.headers.Event, 'Training Match');
+  assert.equal(timeline.pgnHeaders.headers.Site, 'Bogota');
+  assert.equal(timeline.pgnHeaders.headers.White, 'Alice');
+  assert.equal(timeline.pgnHeaders.headers.Black, 'Bob');
+  assert.equal(timeline.pgnHeaders.result, '1-0');
+
+  closeDatabase(db);
+});
+
 test('GameService rejects invalid PGN before creating a game', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

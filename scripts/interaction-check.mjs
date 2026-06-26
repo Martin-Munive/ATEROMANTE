@@ -84,6 +84,11 @@ async function main() {
         }
       }
     });
+    page.on('response', (response) => {
+      if (response.status() >= 500) {
+        consoleErrors.push(`HTTP ${response.status()} ${response.url()}`);
+      }
+    });
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.getByLabel('Casilla e2 ♙').click();
@@ -102,12 +107,23 @@ async function main() {
     await page.getByRole('main').getByText('0 jugadas', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-fen-import.png'), fullPage: true });
 
-    const importedPgn = '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6';
+    const importedPgn = [
+      '[Event "Training Match"]',
+      '[Site "Bogota"]',
+      '[White "Alice"]',
+      '[Black "Bob"]',
+      '[Result "*"]',
+      '',
+      '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6',
+    ].join('\n');
     await page.getByRole('textbox', { name: 'Partida PGN' }).fill(importedPgn);
     await page.getByRole('button', { name: 'Abrir PGN' }).click();
     await page.getByText('Blancas juegan', { exact: true }).waitFor();
     await page.getByRole('main').getByText('6 jugadas', { exact: true }).waitFor();
     await page.getByText('3. Bb5 a6', { exact: false }).waitFor();
+    await page.getByText('Alice', { exact: true }).waitFor();
+    await page.getByText('Bob', { exact: true }).waitFor();
+    await page.getByText('Training Match', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
 
     if (consoleErrors.length > 0) {

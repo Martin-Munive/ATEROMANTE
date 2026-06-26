@@ -19,6 +19,7 @@ interface ApiGameState {
   gameId: string;
   fen: string;
   pgn: string;
+  pgnHeaders: Record<string, string>;
   turn: 'white' | 'black';
   result: string;
   legalMoves: string[];
@@ -409,6 +410,7 @@ export function useChessGame() {
     history: state?.moves ?? [],
     fen: state?.fen ?? chess.fen(),
     pgn: state?.pgn ?? '',
+    pgnHeaders: state?.pgnHeaders ?? {},
     turn: state ? turnLabel(state.turn) : 'Cargando',
     result: state?.result ?? '*',
     legalMoveCount: state?.legalMoves.length ?? 0,

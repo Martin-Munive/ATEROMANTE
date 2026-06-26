@@ -6,13 +6,14 @@
 - Export FEN and PGN.
 - Import FEN.
 - Import basic PGN main line.
+- Preserve standard PGN headers.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.
 - Draw basic educational overlays.
 
 ## MVP 1 - Post-Game Tutor
-- Preserve PGN headers, comments, NAGs and variations.
+- Preserve PGN comments, NAGs and variations.
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.
@@ -23,7 +24,7 @@
 - Search lessons by opening, theme, mistake and position.
 
 ## MVP 1.5 - Traceability And Search
-- Normalize PGN metadata.
+- Normalize richer PGN source metadata.
 - Store FEN and position hashes.
 - Tag moves and positions by phase, theme and mistake type.
 - Add FTS search for tutor explanations and notes.

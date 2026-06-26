@@ -62,6 +62,7 @@ function serializeState(state) {
     gameId: state.game.id,
     fen: state.fen,
     pgn: state.pgn,
+    pgnHeaders: state.pgnHeaders?.headers ?? {},
     turn: state.turn,
     result: state.result,
     legalMoves: state.legalMoves,

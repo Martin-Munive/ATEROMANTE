@@ -44,6 +44,10 @@ function resultFromChess(chess) {
   return '*';
 }
 
+function normalizedResult(value) {
+  return ['1-0', '0-1', '1/2-1/2', '*'].includes(value) ? value : '*';
+}
+
 function replayGame(game, moves) {
   const chess = new Chess(game.initial_fen);
   for (const move of moves) {
@@ -76,7 +80,10 @@ function parsePgn(pgn) {
     if (moves.length === 0) {
       throw new InvalidPgnError('PGN must contain at least one move');
     }
-    return moves;
+    return {
+      headers: chess.getHeaders(),
+      moves,
+    };
   } catch (error) {
     if (error instanceof InvalidPgnError) {
       throw error;
@@ -142,7 +149,7 @@ export class GameService {
     source = 'pgn-import',
     externalId = null,
   } = {}) {
-    const sanMoves = parsePgn(pgn);
+    const parsed = parsePgn(pgn);
     const created = this.createTrainingGame({
       studentId,
       mode,
@@ -154,7 +161,9 @@ export class GameService {
     let positionBefore = created.currentPosition;
     let linkedMove = null;
 
-    for (const san of sanMoves) {
+    this.games.recordPgnHeaders({ gameId: created.game.id, headers: parsed.headers });
+
+    for (const san of parsed.moves) {
       const plyBefore = chess.history().length;
       const applied = chess.move(san);
       if (!applied) {
@@ -196,7 +205,7 @@ export class GameService {
     const updatedGame = this.games.updateGameNotation({
       gameId: created.game.id,
       pgn: chess.pgn(),
-      result: resultFromChess(chess),
+      result: normalizedResult(parsed.headers.Result) !== '*' ? parsed.headers.Result : resultFromChess(chess),
     });
 
     return {
@@ -208,7 +217,7 @@ export class GameService {
       pgn: chess.pgn(),
       turn: sideToMove(chess.turn()),
       legalMoves: chess.moves(),
-      result: resultFromChess(chess),
+      result: updatedGame.result,
     };
   }
 
@@ -219,13 +228,14 @@ export class GameService {
     }
 
     const chess = replayGame(timeline.game, timeline.moves);
+    const liveResult = resultFromChess(chess);
     return {
       ...timeline,
       fen: chess.fen(),
       pgn: chess.pgn(),
       turn: sideToMove(chess.turn()),
       legalMoves: chess.moves(),
-      result: resultFromChess(chess),
+      result: liveResult !== '*' ? liveResult : timeline.game.result,
     };
   }
 

@@ -55,6 +55,7 @@ Evidence:
 - `GET /api/engine/status` reports availability, engine name and bounded runtime settings without exposing the configured executable path.
 - FEN import validates input before persistence and creates `fen-study` sessions without exposing filesystem paths or private material.
 - PGN import parses input before persistence and creates `pgn-study` sessions only after the main line is accepted by `chess.js`.
+- Standard PGN headers are stored in `pgn_headers` and exposed to the UI without storing external files or private paths.
 
 Criteria:
 - no private material in public project;
@@ -81,8 +82,8 @@ Status: PASS_WITH_RISK for the current technical spike.
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
 - `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
-- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import, engine analysis limits and verification.
-- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import flow, services, persistence, tests and extension points.
+- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import with headers, engine analysis limits and verification.
+- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import flow, PGN headers persistence, services, tests and extension points.
 - `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
 - `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
 

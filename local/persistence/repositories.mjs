@@ -331,9 +331,52 @@ export class GameRepository {
     return this.getGame(gameId);
   }
 
+  recordPgnHeaders({ gameId, headers = {} }) {
+    const timestamp = nowIso();
+    this.db.prepare(`
+      INSERT INTO pgn_headers (
+        game_id, headers_json, event, site, date, round, white, black, result, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(game_id) DO UPDATE SET
+        headers_json = excluded.headers_json,
+        event = excluded.event,
+        site = excluded.site,
+        date = excluded.date,
+        round = excluded.round,
+        white = excluded.white,
+        black = excluded.black,
+        result = excluded.result
+    `).run(
+      gameId,
+      json(headers),
+      headers.Event ?? null,
+      headers.Site ?? null,
+      headers.Date ?? null,
+      headers.Round ?? null,
+      headers.White ?? null,
+      headers.Black ?? null,
+      headers.Result ?? null,
+      timestamp,
+    );
+
+    return this.getPgnHeaders(gameId);
+  }
+
+  getPgnHeaders(gameId) {
+    const row = this.db.prepare('SELECT * FROM pgn_headers WHERE game_id = ?').get(gameId);
+    if (!row) {
+      return null;
+    }
+    return {
+      ...row,
+      headers: JSON.parse(row.headers_json),
+    };
+  }
+
   getGameTimeline(gameId) {
     return {
       game: this.getGame(gameId),
+      pgnHeaders: this.getPgnHeaders(gameId),
       positions: this.db.prepare('SELECT * FROM positions WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       moves: this.db.prepare('SELECT * FROM moves WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       events: this.eventLog.listEventsByGame(gameId),

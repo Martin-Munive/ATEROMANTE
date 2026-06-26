@@ -151,16 +151,28 @@ test('local API rejects invalid FEN imports without creating a session', async (
 
 test('local API imports a basic PGN as a study session', async () => {
   await withServer(async (baseUrl) => {
+    const pgn = [
+      '[Event "Training Match"]',
+      '[Site "Bogota"]',
+      '[White "Alice"]',
+      '[Black "Bob"]',
+      '[Result "*"]',
+      '',
+      '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6',
+    ].join('\n');
     const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ pgn: '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6' }),
+      body: JSON.stringify({ pgn }),
     });
     assert.equal(importResponse.status, 201);
     const imported = await readJson(importResponse);
     assert.equal(imported.moves.length, 6);
     assert.equal(imported.moves[0].san, 'e4');
     assert.equal(imported.moves[5].san, 'a6');
+    assert.equal(imported.pgnHeaders.Event, 'Training Match');
+    assert.equal(imported.pgnHeaders.White, 'Alice');
+    assert.equal(imported.pgnHeaders.Black, 'Bob');
     assert.match(imported.pgn, /1\. e4 e5 2\. Nf3 Nc6 3\. Bb5 a6/);
 
     const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=1`);

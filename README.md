@@ -86,6 +86,7 @@ Implementado:
 - panel de motor con disponibilidad, estados de carga/error/exito y flecha educativa para la mejor jugada;
 - importacion FEN desde la barra lateral con validacion previa y sesion `fen-study`;
 - importacion PGN basica desde la barra lateral con persistencia de la linea principal;
+- preservacion de encabezados PGN estandar y visualizacion de jugadores/evento importados;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -94,7 +95,7 @@ Implementado:
 
 Pendiente:
 
-- soporte PGN avanzado: metadatos, comentarios, NAGs y variantes;
+- soporte PGN avanzado: comentarios, NAGs, variantes, archivos y metadatos de fuente;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
