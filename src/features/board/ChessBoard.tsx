@@ -23,6 +23,7 @@ export function ChessBoard({ game }: ChessBoardProps) {
 
   return (
     <section className="board-shell" aria-label="Tablero educativo">
+      {game.variationPreview && <div className="board-mode">Variante PGN</div>}
       <div className="board">
         {boardFiles.map((file, row) =>
           boardRanks.map((rank, col) => {

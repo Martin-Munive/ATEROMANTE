@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
 import type { useChessGame } from '../../hooks/useChessGame';
 
 interface MoveListProps {
@@ -102,22 +102,59 @@ interface VariationTreeProps {
 export function VariationTree({ game }: VariationTreeProps) {
   const variation = game.analysis?.principalVariation.join(' ') ?? 'Variantes del motor pendientes de análisis.';
   const importedVariations = game.pgnVariations.slice(0, 3);
+  const preview = game.variationPreview;
 
   return (
     <section className="bottom-panel variation-tree">
-      <div className="panel-heading"><span>Árbol de variantes</span></div>
+      <div className="panel-heading">
+        <span>Árbol de variantes</span>
+        {preview && (
+          <button aria-label="Cerrar variante" onClick={game.closeVariation} type="button">
+            <X size={16} />
+          </button>
+        )}
+      </div>
       <div className="variation-list">
         <div className="variation selected">
           <strong>{game.analysis ? `d${game.analysis.depth}` : '--'}</strong>
           <span>{variation}</span>
         </div>
         {importedVariations.map((pgnVariation) => (
-          <div className="variation" key={pgnVariation.id}>
+          <button
+            className={`variation ${preview?.variation.id === pgnVariation.id ? 'selected' : ''}`}
+            key={pgnVariation.id}
+            onClick={() => game.openVariation(pgnVariation.id)}
+            type="button"
+          >
             <strong>{`PGN ${pgnVariation.parentPly ?? 0}`}</strong>
             <span>{pgnVariation.sanLine}</span>
-          </div>
+          </button>
         ))}
       </div>
+      {preview && (
+        <div className="variation-playback">
+          <strong>{`${preview.ply}/${preview.totalPlies}`}</strong>
+          <span>{preview.moves.length > 0 ? preview.moves.join(' ') : 'Posición de anclaje'}</span>
+          <div>
+            <button
+              aria-label="Retroceder variante"
+              disabled={!preview.canStepBack}
+              onClick={() => game.stepVariation(-1)}
+              type="button"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              aria-label="Avanzar variante"
+              disabled={!preview.canStepForward}
+              onClick={() => game.stepVariation(1)}
+              type="button"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

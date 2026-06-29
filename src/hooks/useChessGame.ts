@@ -133,6 +133,10 @@ function boardPieces(chess: Chess): BoardPieces {
   return pieces;
 }
 
+function variationTokens(sanLine: string) {
+  return sanLine.split(/\s+/).map((token) => token.trim()).filter(Boolean);
+}
+
 function toSquare(square: string) {
   return square as Square;
 }
@@ -181,6 +185,8 @@ export function useChessGame() {
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
   const [pgnImportError, setPgnImportError] = useState<string | null>(null);
+  const [activeVariationId, setActiveVariationId] = useState<string | null>(null);
+  const [activeVariationPly, setActiveVariationPly] = useState(0);
 
   async function refreshRecentSessions() {
     setSessionsLoading(true);
@@ -233,9 +239,11 @@ export function useChessGame() {
     setLoading(true);
     setSelectedSquare(null);
     setLastError(null);
-    setAnalysis(null);
-    setAnalysisError(null);
-    try {
+      setAnalysis(null);
+      setAnalysisError(null);
+      setActiveVariationId(null);
+      setActiveVariationPly(0);
+      try {
       const nextState = await getJson<ApiGameState>(`${apiBaseUrl}/api/games/${gameId}`);
       setState(nextState);
       await refreshRecentSessions();
@@ -259,6 +267,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setActiveVariationId(null);
+    setActiveVariationPly(0);
     try {
       const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/fen`, { fen: normalizedInput });
       setState(imported);
@@ -286,6 +296,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setActiveVariationId(null);
+    setActiveVariationPly(0);
     try {
       const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/pgn`, {
         pgn: normalizedInput,
@@ -340,6 +352,36 @@ export function useChessGame() {
   }, []);
 
   const chess = useMemo(() => new Chess(state?.fen), [state?.fen]);
+  const activeVariation = useMemo(
+    () => state?.pgnVariations.find((variation) => variation.id === activeVariationId) ?? null,
+    [activeVariationId, state?.pgnVariations],
+  );
+  const variationPreview = useMemo(() => {
+    if (!activeVariation?.parentFen) {
+      return null;
+    }
+    const tokens = variationTokens(activeVariation.sanLine);
+    const boundedPly = Math.min(activeVariationPly, tokens.length);
+    const previewChess = new Chess(activeVariation.parentFen);
+    const appliedMoves = [];
+    for (const token of tokens.slice(0, boundedPly)) {
+      const applied = previewChess.move(token);
+      if (!applied) {
+        break;
+      }
+      appliedMoves.push(applied.san);
+    }
+    return {
+      variation: activeVariation,
+      pieces: boardPieces(previewChess),
+      fen: previewChess.fen(),
+      moves: appliedMoves,
+      ply: appliedMoves.length,
+      totalPlies: tokens.length,
+      canStepBack: appliedMoves.length > 0,
+      canStepForward: appliedMoves.length < tokens.length,
+    };
+  }, [activeVariation, activeVariationPly]);
   const selectedLegalTargets = useMemo(() => {
     if (!selectedSquare) {
       return new Set<string>();
@@ -352,7 +394,7 @@ export function useChessGame() {
   async function handleSquare(square: string) {
     setLastError(null);
 
-    if (!state) {
+    if (!state || variationPreview) {
       return null;
     }
 
@@ -414,6 +456,26 @@ export function useChessGame() {
     }
   }
 
+  function openVariation(variationId: string) {
+    setSelectedSquare(null);
+    setLastError(null);
+    setActiveVariationId(variationId);
+    setActiveVariationPly(0);
+  }
+
+  function closeVariation() {
+    setActiveVariationId(null);
+    setActiveVariationPly(0);
+  }
+
+  function stepVariation(delta: number) {
+    if (!activeVariation) {
+      return;
+    }
+    const totalPlies = variationTokens(activeVariation.sanLine).length;
+    setActiveVariationPly((current) => Math.max(0, Math.min(totalPlies, current + delta)));
+  }
+
   async function analyzePosition(depth = 12) {
     if (!state || analysisLoading) {
       return null;
@@ -436,18 +498,19 @@ export function useChessGame() {
   }
 
   return {
-    pieces: boardPieces(chess),
+    pieces: variationPreview?.pieces ?? boardPieces(chess),
     selectedSquare,
     selectedLegalTargets,
     lastMove,
     lastError,
     history: state?.moves ?? [],
-    fen: state?.fen ?? chess.fen(),
+    fen: variationPreview?.fen ?? state?.fen ?? chess.fen(),
     pgn: state?.pgn ?? '',
     pgnHeaders: state?.pgnHeaders ?? {},
     pgnSource: state?.pgnSource ?? null,
     pgnAnnotations: state?.pgnAnnotations ?? [],
     pgnVariations: state?.pgnVariations ?? [],
+    variationPreview,
     turn: state ? turnLabel(state.turn) : 'Cargando',
     result: state?.result ?? '*',
     legalMoveCount: state?.legalMoves.length ?? 0,
@@ -474,5 +537,8 @@ export function useChessGame() {
     importFen,
     importPgn,
     loadGame,
+    openVariation,
+    closeVariation,
+    stepVariation,
   };
 }

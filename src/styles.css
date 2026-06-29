@@ -450,6 +450,20 @@ button {
   display: grid;
   place-items: center;
   min-width: 0;
+  position: relative;
+}
+
+.board-mode {
+  position: absolute;
+  top: 14px;
+  z-index: 5;
+  padding: 6px 10px;
+  border: 1px solid rgba(150, 211, 111, 0.42);
+  border-radius: 5px;
+  background: rgba(17, 20, 18, 0.92);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .board {
@@ -848,8 +862,11 @@ button {
   min-height: 42px;
   padding: 0 12px;
   border-radius: 6px;
+  border: 1px solid transparent;
   background: #171b18;
   color: #c8c2b7;
+  cursor: pointer;
+  text-align: left;
 }
 
 .variation.selected {
@@ -866,6 +883,51 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
+}
+
+.variation-playback {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #111412;
+  color: var(--muted);
+}
+
+.variation-playback strong {
+  color: var(--green);
+}
+
+.variation-playback span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variation-playback div {
+  display: flex;
+  gap: 6px;
+}
+
+.variation-playback button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #171917;
+  color: var(--gold-2);
+  cursor: pointer;
+}
+
+.variation-playback button:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 @media (max-width: 900px) {

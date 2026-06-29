@@ -212,6 +212,8 @@ function parsePgnVariations(pgn) {
   let token = '';
   let currentFen = chess.fen();
   let currentPly = 0;
+  let previousFen = currentFen;
+  let previousPly = currentPly;
   let inComment = false;
   let inSemicolonComment = false;
 
@@ -226,6 +228,8 @@ function parsePgnVariations(pgn) {
       return;
     }
     try {
+      previousFen = currentFen;
+      previousPly = currentPly;
       const move = chess.move(san);
       if (move) {
         currentFen = chess.fen();
@@ -281,8 +285,8 @@ function parsePgnVariations(pgn) {
       const rawPgn = normalizeVariationText(raw);
       if (rawPgn) {
         variations.push({
-          parentFen: currentFen,
-          parentPly: currentPly,
+          parentFen: previousFen,
+          parentPly: previousPly,
           variationIndex: variations.length,
           depth: 1,
           sanLine: variationSanLine(rawPgn),

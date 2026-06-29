@@ -14,7 +14,7 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
 
-It does not yet include full interactive PGN variation playback, real LLM tutoring, reports, online connectors or networked training rooms.
+It does not yet include full recursive PGN variation tree editing, real LLM tutoring, reports, online connectors or networked training rooms.
 
 ## Install And Run
 Install dependencies from the project root:
@@ -86,7 +86,7 @@ For file imports, ATEROMANTE stores the file name, size, MIME type when availabl
 
 Supported NAG input includes numeric annotations such as `$1` and common suffix annotations such as `!`, `?`, `!!`, `??`, `!?` and `?!`.
 
-The current PGN slice is intentionally main-line first. Imported variations are preserved and shown in the variation panel, but branch playback and full variation-tree navigation are planned for later import phases.
+The current PGN slice is intentionally main-line first. Imported variations are preserved and shown in the variation panel. Click a PGN variation to open it as a temporary branch, then use the variation arrows to step forward or backward without changing the saved main line.
 
 ## Engine Analysis
 The engine panel can analyze the current persisted position.
@@ -136,7 +136,7 @@ npm run qa:interaction
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata and preserved variation text; interactive variation playback is not implemented yet.
+- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved variation text and temporary variation playback.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

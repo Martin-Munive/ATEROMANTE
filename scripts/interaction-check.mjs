@@ -129,6 +129,12 @@ async function main() {
     await page.getByText('NAG $1', { exact: false }).first().waitFor();
     await page.getByText('c5 Nf3', { exact: false }).waitFor();
     await page.getByText('training-match.pgn', { exact: true }).waitFor();
+    await page.getByRole('button', { name: /c5 Nf3/ }).click();
+    await page.getByText('Variante PGN', { exact: true }).waitFor();
+    await page.getByText('0/2', { exact: true }).first().waitFor();
+    await page.getByRole('button', { name: 'Avanzar variante' }).click();
+    await page.getByText('1/2', { exact: true }).first().waitFor();
+    await page.getByText('c5', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
 
     if (consoleErrors.length > 0) {
