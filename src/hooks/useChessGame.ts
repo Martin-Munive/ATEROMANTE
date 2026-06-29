@@ -20,6 +20,7 @@ interface ApiGameState {
   fen: string;
   pgn: string;
   pgnHeaders: Record<string, string>;
+  pgnSource: PgnSource | null;
   pgnAnnotations: PgnAnnotation[];
   pgnVariations: PgnVariation[];
   turn: 'white' | 'black';
@@ -45,6 +46,15 @@ export interface PgnVariation {
   depth: number;
   sanLine: string;
   rawPgn: string;
+}
+
+export interface PgnSource {
+  sourceType: 'text' | 'file';
+  fileName: string | null;
+  mimeType: string | null;
+  byteSize: number | null;
+  pgnSha256: string;
+  createdAt: string;
 }
 
 export interface SessionSummary {
@@ -263,7 +273,7 @@ export function useChessGame() {
     }
   }
 
-  async function importPgn(pgn: string) {
+  async function importPgn(pgn: string, sourceMetadata: Record<string, unknown> = {}) {
     const normalizedInput = pgn.trim();
     if (!normalizedInput) {
       setPgnImportError('Pega una partida PGN antes de importarla.');
@@ -277,7 +287,10 @@ export function useChessGame() {
     setAnalysis(null);
     setAnalysisError(null);
     try {
-      const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/pgn`, { pgn: normalizedInput });
+      const imported = await postJson<ApiGameState>(`${apiBaseUrl}/api/import/pgn`, {
+        pgn: normalizedInput,
+        sourceMetadata,
+      });
       setState(imported);
       await refreshRecentSessions();
       return imported;
@@ -432,6 +445,7 @@ export function useChessGame() {
     fen: state?.fen ?? chess.fen(),
     pgn: state?.pgn ?? '',
     pgnHeaders: state?.pgnHeaders ?? {},
+    pgnSource: state?.pgnSource ?? null,
     pgnAnnotations: state?.pgnAnnotations ?? [],
     pgnVariations: state?.pgnVariations ?? [],
     turn: state ? turnLabel(state.turn) : 'Cargando',

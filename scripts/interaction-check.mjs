@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -103,7 +103,7 @@ async function main() {
     await page.getByRole('textbox', { name: 'Posición FEN' }).fill(importedFen);
     await page.getByRole('button', { name: 'Abrir posición' }).click();
     await page.getByText('Blancas juegan', { exact: true }).waitFor();
-    await page.getByText(importedFen, { exact: true }).waitFor();
+    await page.getByRole('main').getByText(importedFen, { exact: true }).waitFor();
     await page.getByRole('main').getByText('0 jugadas', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-fen-import.png'), fullPage: true });
 
@@ -116,8 +116,9 @@ async function main() {
       '',
       '1. e4! {Claims central space.} e5 (1... c5 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
     ].join('\n');
-    await page.getByRole('textbox', { name: 'Partida PGN' }).fill(importedPgn);
-    await page.getByRole('button', { name: 'Abrir PGN' }).click();
+    const importedPgnPath = resolve(artifactsDir, 'training-match.pgn');
+    await writeFile(importedPgnPath, importedPgn, 'utf8');
+    await page.getByLabel('Archivo PGN').setInputFiles(importedPgnPath);
     await page.getByText('Blancas juegan', { exact: true }).waitFor();
     await page.getByRole('main').getByText('6 jugadas', { exact: true }).waitFor();
     await page.getByText('3. Bb5 a6', { exact: false }).waitFor();
@@ -127,6 +128,7 @@ async function main() {
     await page.getByText('Claims central space.', { exact: false }).waitFor();
     await page.getByText('NAG $1', { exact: false }).first().waitFor();
     await page.getByText('c5 Nf3', { exact: false }).waitFor();
+    await page.getByText('training-match.pgn', { exact: true }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
 
     if (consoleErrors.length > 0) {

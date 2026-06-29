@@ -373,6 +373,42 @@ export class GameRepository {
     };
   }
 
+  recordPgnSource({
+    gameId,
+    sourceType = 'text',
+    fileName = null,
+    mimeType = null,
+    byteSize = null,
+    pgnSha256,
+  }) {
+    const timestamp = nowIso();
+    this.db.prepare(`
+      INSERT INTO pgn_sources (
+        game_id, source_type, file_name, mime_type, byte_size, pgn_sha256, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(game_id) DO UPDATE SET
+        source_type = excluded.source_type,
+        file_name = excluded.file_name,
+        mime_type = excluded.mime_type,
+        byte_size = excluded.byte_size,
+        pgn_sha256 = excluded.pgn_sha256
+    `).run(
+      gameId,
+      sourceType,
+      fileName,
+      mimeType,
+      byteSize,
+      pgnSha256,
+      timestamp,
+    );
+
+    return this.getPgnSource(gameId);
+  }
+
+  getPgnSource(gameId) {
+    return this.db.prepare('SELECT * FROM pgn_sources WHERE game_id = ?').get(gameId) ?? null;
+  }
+
   recordPgnAnnotations({ gameId, annotations = [] }) {
     const timestamp = nowIso();
     const insert = this.db.prepare(`
@@ -438,6 +474,7 @@ export class GameRepository {
     return {
       game: this.getGame(gameId),
       pgnHeaders: this.getPgnHeaders(gameId),
+      pgnSource: this.getPgnSource(gameId),
       pgnAnnotations: this.listPgnAnnotations(gameId),
       pgnVariations: this.listPgnVariations(gameId),
       positions: this.db.prepare('SELECT * FROM positions WHERE game_id = ? ORDER BY ply ASC').all(gameId),

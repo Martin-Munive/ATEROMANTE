@@ -10,6 +10,7 @@
 - Preserve main-line PGN comments.
 - Preserve main-line PGN NAGs and suffix annotations.
 - Preserve imported PGN variation text with main-line anchors.
+- Import browser-read `.pgn` files with sanitized source metadata.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Chess } from 'chess.js';
 import {
   EventLogRepository,
@@ -46,6 +47,35 @@ function resultFromChess(chess) {
 
 function normalizedResult(value) {
   return ['1-0', '0-1', '1/2-1/2', '*'].includes(value) ? value : '*';
+}
+
+function sha256(value) {
+  return createHash('sha256').update(value, 'utf8').digest('hex');
+}
+
+function sanitizeSourceFileName(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const fileName = value.split(/[\\/]/).at(-1)?.trim() ?? '';
+  return fileName ? fileName.slice(0, 255) : null;
+}
+
+function normalizePgnSourceMetadata(pgn, sourceMetadata = {}) {
+  const sourceType = sourceMetadata.sourceType === 'file' ? 'file' : 'text';
+  const byteSize = Number.isInteger(sourceMetadata.byteSize) && sourceMetadata.byteSize >= 0
+    ? sourceMetadata.byteSize
+    : Buffer.byteLength(pgn, 'utf8');
+
+  return {
+    sourceType,
+    fileName: sourceType === 'file' ? sanitizeSourceFileName(sourceMetadata.fileName) : null,
+    mimeType: typeof sourceMetadata.mimeType === 'string' && sourceMetadata.mimeType.trim()
+      ? sourceMetadata.mimeType.trim().slice(0, 120)
+      : null,
+    byteSize,
+    pgnSha256: sha256(pgn),
+  };
 }
 
 const SUFFIX_TO_NAG = {
@@ -351,6 +381,7 @@ export class GameService {
 
   importPgn({
     pgn,
+    sourceMetadata = {},
     studentId = null,
     mode = 'pgn-study',
     stationRole = 'hybrid',
@@ -358,6 +389,7 @@ export class GameService {
     externalId = null,
   } = {}) {
     const parsed = parsePgn(pgn);
+    const normalizedSource = normalizePgnSourceMetadata(pgn.trim(), sourceMetadata);
     const created = this.createTrainingGame({
       studentId,
       mode,
@@ -371,6 +403,7 @@ export class GameService {
     const positionsByFen = new Map([[created.currentPosition.fen, created.currentPosition]]);
 
     this.games.recordPgnHeaders({ gameId: created.game.id, headers: parsed.headers });
+    this.games.recordPgnSource({ gameId: created.game.id, ...normalizedSource });
 
     for (const san of parsed.moves) {
       const plyBefore = chess.history().length;

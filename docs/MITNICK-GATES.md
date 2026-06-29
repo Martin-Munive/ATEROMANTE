@@ -59,6 +59,7 @@ Evidence:
 - Main-line PGN comments are stored in `pgn_annotations` by FEN/position and rendered in the tutor panel.
 - Main-line PGN NAGs and suffix annotations are stored in `pgn_annotations` as `annotation_type='nag'` by FEN/position and rendered in the tutor panel.
 - Imported PGN variations are stored in `pgn_variations` with raw PGN text, normalized SAN line and main-line anchor, then rendered in the variation panel.
+- Browser-read `.pgn` imports store sanitized source metadata in `pgn_sources`; local filesystem paths are stripped and not persisted.
 
 Criteria:
 - no private material in public project;
@@ -85,8 +86,8 @@ Status: PASS_WITH_RISK for the current technical spike.
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
 - `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
-- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import with headers/comments/NAGs/variations, engine analysis limits and verification.
-- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import flow, PGN headers/comment/NAG/variation persistence, services, tests and extension points.
+- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import with files/headers/comments/NAGs/variations/source metadata, engine analysis limits and verification.
+- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import flow, PGN source/header/comment/NAG/variation persistence, services, tests and extension points.
 - `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
 - `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
 

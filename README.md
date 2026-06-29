@@ -86,7 +86,9 @@ Implementado:
 - panel de motor con disponibilidad, estados de carga/error/exito y flecha educativa para la mejor jugada;
 - importacion FEN desde la barra lateral con validacion previa y sesion `fen-study`;
 - importacion PGN basica desde la barra lateral con persistencia de la linea principal;
+- importacion de archivos `.pgn` leidos por el navegador sin persistir rutas locales;
 - preservacion de encabezados PGN estandar y visualizacion de jugadores/evento importados;
+- preservacion de metadatos de fuente PGN: nombre de archivo, tamano, tipo MIME y hash SHA-256;
 - preservacion de comentarios PGN de linea principal vinculados a posiciones;
 - preservacion de NAGs PGN de linea principal y anotaciones de sufijo;
 - preservacion inicial de variantes PGN importadas y visualizacion en el panel de variantes;
@@ -98,7 +100,7 @@ Implementado:
 
 Pendiente:
 
-- soporte PGN avanzado: reproduccion interactiva de variantes, archivos y metadatos de fuente;
+- soporte PGN avanzado: reproduccion interactiva de variantes y metadatos de fuente enriquecidos para conectores;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.

@@ -29,6 +29,22 @@ export function Sidebar({ game }: SidebarProps) {
     }
   }
 
+  async function handlePgnFileImport(file: File | null) {
+    if (!file) {
+      return;
+    }
+    const pgn = await file.text();
+    const imported = await game.importPgn(pgn, {
+      sourceType: 'file',
+      fileName: file.name,
+      mimeType: file.type || 'application/x-chess-pgn',
+      byteSize: file.size,
+    });
+    if (imported) {
+      setPgnInput('');
+    }
+  }
+
   return (
     <aside className="sidebar">
       <nav>
@@ -69,6 +85,16 @@ export function Sidebar({ game }: SidebarProps) {
           placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6"
           rows={5}
           value={pgnInput}
+        />
+        <input
+          accept=".pgn,application/x-chess-pgn,text/plain"
+          aria-label="Archivo PGN"
+          disabled={game.pgnImportLoading}
+          onChange={(event) => {
+            void handlePgnFileImport(event.target.files?.[0] ?? null);
+            event.target.value = '';
+          }}
+          type="file"
         />
         {game.pgnImportError && <small className="history-error">{game.pgnImportError}</small>}
         <button disabled={game.pgnImportLoading} onClick={handlePgnImport} type="button">

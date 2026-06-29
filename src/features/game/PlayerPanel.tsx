@@ -25,6 +25,7 @@ export function PlayerPanel({ game }: PlayerPanelProps) {
           <div><dt>Turno:</dt><dd>{game.turn}</dd></div>
           <div><dt>Legal:</dt><dd>{game.legalMoveCount} jugadas</dd></div>
           <div><dt>Resultado:</dt><dd>{game.result}</dd></div>
+          {game.pgnSource?.fileName && <div><dt>Archivo:</dt><dd>{game.pgnSource.fileName}</dd></div>}
           {game.pgnHeaders.Round && <div><dt>Ronda:</dt><dd>{game.pgnHeaders.Round}</dd></div>}
         </dl>
       </div>

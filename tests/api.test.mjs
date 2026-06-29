@@ -163,7 +163,15 @@ test('local API imports a basic PGN as a study session', async () => {
     const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ pgn }),
+      body: JSON.stringify({
+        pgn,
+        sourceMetadata: {
+          sourceType: 'file',
+          fileName: 'C:\\private\\training-match.pgn',
+          mimeType: 'application/x-chess-pgn',
+          byteSize: 256,
+        },
+      }),
     });
     assert.equal(importResponse.status, 201);
     const imported = await readJson(importResponse);
@@ -173,6 +181,9 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(imported.pgnHeaders.Event, 'Training Match');
     assert.equal(imported.pgnHeaders.White, 'Alice');
     assert.equal(imported.pgnHeaders.Black, 'Bob');
+    assert.equal(imported.pgnSource.sourceType, 'file');
+    assert.equal(imported.pgnSource.fileName, 'training-match.pgn');
+    assert.equal(imported.pgnSource.byteSize, 256);
     assert.equal(imported.pgnAnnotations.length, 3);
     assert.ok(imported.pgnAnnotations.some((annotation) => annotation.value === 'Claims central space.'));
     assert.ok(imported.pgnAnnotations.some((annotation) => annotation.annotationType === 'nag' && annotation.value === '$1'));

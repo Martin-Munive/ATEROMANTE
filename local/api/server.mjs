@@ -63,6 +63,14 @@ function serializeState(state) {
     fen: state.fen,
     pgn: state.pgn,
     pgnHeaders: state.pgnHeaders?.headers ?? {},
+    pgnSource: state.pgnSource ? {
+      sourceType: state.pgnSource.source_type,
+      fileName: state.pgnSource.file_name,
+      mimeType: state.pgnSource.mime_type,
+      byteSize: state.pgnSource.byte_size,
+      pgnSha256: state.pgnSource.pgn_sha256,
+      createdAt: state.pgnSource.created_at,
+    } : null,
     pgnAnnotations: state.pgnAnnotations.map((annotation) => ({
       id: annotation.id,
       positionId: annotation.position_id,
@@ -211,7 +219,7 @@ export function createAteromanteApiServer({
 
       if (request.method === 'POST' && url.pathname === '/api/import/pgn') {
         const input = await readJson(request);
-        const imported = service.importPgn({ pgn: input.pgn });
+        const imported = service.importPgn({ pgn: input.pgn, sourceMetadata: input.sourceMetadata });
         const state = service.getGameState(imported.game.id);
         sendJson(response, 201, serializeState(state));
         return;

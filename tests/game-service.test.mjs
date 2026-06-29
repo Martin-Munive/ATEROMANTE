@@ -166,6 +166,30 @@ test('GameService preserves PGN variations with a main-line anchor', () => {
   closeDatabase(db);
 });
 
+test('GameService preserves PGN source metadata without local paths', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: '1. e4 e5 2. Nf3 Nc6',
+    sourceMetadata: {
+      sourceType: 'file',
+      fileName: 'C:\\private\\training-game.pgn',
+      mimeType: 'application/x-chess-pgn',
+      byteSize: 42,
+    },
+  });
+  const timeline = service.getGameState(imported.game.id);
+
+  assert.equal(timeline.pgnSource.source_type, 'file');
+  assert.equal(timeline.pgnSource.file_name, 'training-game.pgn');
+  assert.equal(timeline.pgnSource.mime_type, 'application/x-chess-pgn');
+  assert.equal(timeline.pgnSource.byte_size, 42);
+  assert.match(timeline.pgnSource.pgn_sha256, /^[a-f0-9]{64}$/);
+
+  closeDatabase(db);
+});
+
 test('GameService rejects invalid PGN before creating a game', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

@@ -73,6 +73,16 @@ CREATE TABLE IF NOT EXISTS pgn_headers (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS pgn_sources (
+  game_id TEXT PRIMARY KEY REFERENCES games(id) ON DELETE CASCADE,
+  source_type TEXT NOT NULL CHECK (source_type IN ('text', 'file')),
+  file_name TEXT,
+  mime_type TEXT,
+  byte_size INTEGER CHECK (byte_size IS NULL OR byte_size >= 0),
+  pgn_sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS pgn_annotations (
   id TEXT PRIMARY KEY,
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
@@ -221,6 +231,7 @@ CREATE TABLE IF NOT EXISTS review_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_games_source_external ON games(source, external_id);
+CREATE INDEX IF NOT EXISTS idx_pgn_sources_sha256 ON pgn_sources(pgn_sha256);
 CREATE INDEX IF NOT EXISTS idx_games_opening_result ON games(opening_eco, result);
 CREATE INDEX IF NOT EXISTS idx_positions_fen_hash ON positions(fen_hash);
 CREATE INDEX IF NOT EXISTS idx_positions_phase ON positions(phase);

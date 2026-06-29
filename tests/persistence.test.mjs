@@ -38,6 +38,7 @@ test('migration creates the normalized persistence core', () => {
     'moves',
     'pgn_annotations',
     'pgn_headers',
+    'pgn_sources',
     'pgn_variations',
     'positions',
     'review_items',
@@ -131,6 +132,14 @@ test('repositories persist a session, game, positions, move and timeline events'
       rawPgn: '1... c5',
     }],
   });
+  const source = games.recordPgnSource({
+    gameId: game.id,
+    sourceType: 'file',
+    fileName: 'training-game.pgn',
+    mimeType: 'application/x-chess-pgn',
+    byteSize: 128,
+    pgnSha256: 'a'.repeat(64),
+  });
 
   const timeline = games.getGameTimeline(game.id);
   assert.equal(timeline.game.id, game.id);
@@ -142,6 +151,8 @@ test('repositories persist a session, game, positions, move and timeline events'
   assert.equal(timeline.pgnAnnotations[1].value, '$1');
   assert.equal(variations[0].san_line, '1... c5');
   assert.equal(timeline.pgnVariations[0].parent_ply, 1);
+  assert.equal(source.file_name, 'training-game.pgn');
+  assert.equal(timeline.pgnSource.source_type, 'file');
   assert.equal(timeline.moves[0].san, 'e4');
   assert.equal(timeline.positions.length, 2);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [

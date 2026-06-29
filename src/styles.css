@@ -269,6 +269,23 @@ button {
   padding: 9px;
 }
 
+.pgn-import-panel input[type="file"] {
+  width: 100%;
+  min-height: 34px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pgn-import-panel input[type="file"]::file-selector-button {
+  min-height: 30px;
+  margin-right: 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #171917;
+  color: var(--gold-2);
+  cursor: pointer;
+}
+
 .fen-import-panel button,
 .pgn-import-panel button {
   justify-content: center;

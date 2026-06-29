@@ -9,7 +9,7 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - reopen recent sessions from the sidebar history;
 - paste a FEN position and open it as a new study session;
 - paste a basic PGN main line and open it as a persisted study session;
-- preserve standard PGN headers, main-line comments, main-line NAG annotations and imported PGN variations;
+- preserve standard PGN headers, main-line comments, main-line NAG annotations, imported PGN variations and PGN source metadata;
 - request engine analysis through a configured external UCI engine;
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
@@ -76,11 +76,13 @@ Click `Abrir posición` to create a new `fen-study` session from that position.
 The app validates the FEN before writing to SQLite. Invalid FEN input is rejected and does not create a game.
 
 ## Import PGN
-Use the `Importar PGN` panel in the sidebar to paste a basic PGN main line.
+Use the `Importar PGN` panel in the sidebar to paste a basic PGN main line or select a local `.pgn` file.
 
-Click `Abrir PGN` to create a new `pgn-study` session.
+Click `Abrir PGN` to import pasted text. Selecting a `.pgn` file imports it immediately.
 
-The current importer validates moves with `chess.js`, persists every move and position, stores PGN headers such as event, site, players and result, preserves main-line comments and NAGs by position, stores imported PGN variations, and refreshes the session history. Invalid PGN input is rejected before creating a game.
+The current importer validates moves with `chess.js`, persists every move and position, stores PGN headers such as event, site, players and result, preserves main-line comments and NAGs by position, stores imported PGN variations, stores non-sensitive source metadata, and refreshes the session history. Invalid PGN input is rejected before creating a game.
+
+For file imports, ATEROMANTE stores the file name, size, MIME type when available and a SHA-256 hash of the PGN text. It does not store the local filesystem path.
 
 Supported NAG input includes numeric annotations such as `$1` and common suffix annotations such as `!`, `?`, `!!`, `??`, `!?` and `?!`.
 
@@ -134,7 +136,7 @@ npm run qa:interaction
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import currently supports a basic main line, standard headers, comments, NAG annotations and preserved variation text; interactive variation playback is not implemented yet.
+- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata and preserved variation text; interactive variation playback is not implemented yet.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.
