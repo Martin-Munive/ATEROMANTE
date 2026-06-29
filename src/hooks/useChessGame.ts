@@ -32,7 +32,7 @@ export interface PgnAnnotation {
   positionId: string | null;
   fen: string;
   ply: number | null;
-  annotationType: 'comment';
+  annotationType: 'comment' | 'nag';
   value: string;
 }
 

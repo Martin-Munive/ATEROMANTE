@@ -48,6 +48,15 @@ function normalizedResult(value) {
   return ['1-0', '0-1', '1/2-1/2', '*'].includes(value) ? value : '*';
 }
 
+const SUFFIX_TO_NAG = {
+  '!': '$1',
+  '?': '$2',
+  '!!': '$3',
+  '??': '$4',
+  '!?': '$5',
+  '?!': '$6',
+};
+
 function replayGame(game, moves) {
   const chess = new Chess(game.initial_fen);
   for (const move of moves) {
@@ -68,6 +77,78 @@ function normalizeFen(fen) {
   }
 }
 
+function removeVariations(input) {
+  let depth = 0;
+  let output = '';
+  for (const character of input) {
+    if (character === '(') {
+      depth += 1;
+      output += ' ';
+      continue;
+    }
+    if (character === ')') {
+      depth = Math.max(0, depth - 1);
+      output += ' ';
+      continue;
+    }
+    if (depth === 0) {
+      output += character;
+    }
+  }
+  return output;
+}
+
+function tokenizeMainLinePgn(pgn) {
+  return removeVariations(pgn)
+    .replace(/^\s*\[[^\]]+\]\s*$/gm, ' ')
+    .replace(/\{[^}]*\}/g, ' ')
+    .replace(/;[^\r\n]*/g, ' ')
+    .replace(/\d+\.(\.\.)?/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function parseNagAnnotations(pgn) {
+  const chess = new Chess();
+  const annotations = [];
+  let currentFen = null;
+  let currentPly = null;
+
+  for (const token of tokenizeMainLinePgn(pgn)) {
+    if (['1-0', '0-1', '1/2-1/2', '*'].includes(token)) {
+      continue;
+    }
+
+    if (/^\$\d+$/.test(token)) {
+      if (currentFen && currentPly !== null) {
+        annotations.push({ fen: currentFen, ply: currentPly, value: token });
+      }
+      continue;
+    }
+
+    const suffix = token.match(/(!!|\?\?|!\?|\?!|!|\?)$/)?.[0] ?? null;
+    const san = suffix ? token.slice(0, -suffix.length) : token;
+    let applied = null;
+    try {
+      applied = chess.move(san);
+    } catch {
+      applied = null;
+    }
+    if (!applied) {
+      continue;
+    }
+
+    currentFen = chess.fen();
+    currentPly = chess.history().length;
+    if (suffix) {
+      annotations.push({ fen: currentFen, ply: currentPly, value: SUFFIX_TO_NAG[suffix] });
+    }
+  }
+
+  return annotations;
+}
+
 function parsePgn(pgn) {
   if (typeof pgn !== 'string' || pgn.trim() === '') {
     throw new InvalidPgnError('PGN input is required');
@@ -83,6 +164,7 @@ function parsePgn(pgn) {
     return {
       headers: chess.getHeaders(),
       comments: chess.getComments(),
+      nags: parseNagAnnotations(pgn),
       moves,
     };
   } catch (error) {
@@ -216,7 +298,16 @@ export class GameService {
           annotationType: 'comment',
           value: comment.comment,
         };
-      }),
+      }).concat(parsed.nags.map((nag) => {
+        const position = positionsByFen.get(nag.fen);
+        return {
+          positionId: position?.id ?? null,
+          fen: nag.fen,
+          ply: position?.ply ?? nag.ply,
+          annotationType: 'nag',
+          value: nag.value,
+        };
+      })),
     });
 
     const updatedGame = this.games.updateGameNotation({

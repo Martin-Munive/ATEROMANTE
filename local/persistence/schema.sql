@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS pgn_annotations (
   position_id TEXT REFERENCES positions(id) ON DELETE SET NULL,
   fen TEXT NOT NULL,
   ply INTEGER CHECK (ply >= 0),
-  annotation_type TEXT NOT NULL CHECK (annotation_type IN ('comment')),
+  annotation_type TEXT NOT NULL CHECK (annotation_type IN ('comment', 'nag')),
   value TEXT NOT NULL,
   created_at TEXT NOT NULL
 );

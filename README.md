@@ -88,6 +88,7 @@ Implementado:
 - importacion PGN basica desde la barra lateral con persistencia de la linea principal;
 - preservacion de encabezados PGN estandar y visualizacion de jugadores/evento importados;
 - preservacion de comentarios PGN de linea principal vinculados a posiciones;
+- preservacion de NAGs PGN de linea principal y anotaciones de sufijo;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -96,7 +97,7 @@ Implementado:
 
 Pendiente:
 
-- soporte PGN avanzado: NAGs, variantes, archivos y metadatos de fuente;
+- soporte PGN avanzado: variantes, archivos y metadatos de fuente;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.

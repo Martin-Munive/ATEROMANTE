@@ -43,7 +43,7 @@ export function TutorPanel({ game }: TutorPanelProps) {
             {game.pgnAnnotations.slice(0, 3).map((annotation) => (
               <li key={annotation.id}>
                 <strong>{annotation.ply === 0 ? 'Inicio' : `Jugada ${annotation.ply ?? '-'}`}</strong>
-                {annotation.value}
+                {annotation.annotationType === 'nag' ? `NAG ${annotation.value}` : annotation.value}
               </li>
             ))}
           </ul>

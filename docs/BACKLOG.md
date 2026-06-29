@@ -8,13 +8,14 @@
 - Import basic PGN main line.
 - Preserve standard PGN headers.
 - Preserve main-line PGN comments.
+- Preserve main-line PGN NAGs and suffix annotations.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.
 - Draw basic educational overlays.
 
 ## MVP 1 - Post-Game Tutor
-- Preserve PGN NAGs and variations.
+- Preserve PGN variations.
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.

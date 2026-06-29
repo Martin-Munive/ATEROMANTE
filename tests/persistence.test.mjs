@@ -111,6 +111,12 @@ test('repositories persist a session, game, positions, move and timeline events'
       ply: 1,
       annotationType: 'comment',
       value: 'Central space advantage.',
+    }, {
+      positionId: after.id,
+      fen: after.fen,
+      ply: 1,
+      annotationType: 'nag',
+      value: '$1',
     }],
   });
 
@@ -120,6 +126,8 @@ test('repositories persist a session, game, positions, move and timeline events'
   assert.equal(timeline.pgnHeaders.headers.White, 'Alice');
   assert.equal(annotations[0].value, 'Central space advantage.');
   assert.equal(timeline.pgnAnnotations[0].position_id, after.id);
+  assert.equal(timeline.pgnAnnotations[1].annotation_type, 'nag');
+  assert.equal(timeline.pgnAnnotations[1].value, '$1');
   assert.equal(timeline.moves[0].san, 'e4');
   assert.equal(timeline.positions.length, 2);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [

@@ -114,7 +114,7 @@ async function main() {
       '[Black "Bob"]',
       '[Result "*"]',
       '',
-      '1. e4 {Claims central space.} e5 2. Nf3 Nc6 3. Bb5 a6',
+      '1. e4! {Claims central space.} e5 2. Nf3 $1 Nc6 3. Bb5 a6',
     ].join('\n');
     await page.getByRole('textbox', { name: 'Partida PGN' }).fill(importedPgn);
     await page.getByRole('button', { name: 'Abrir PGN' }).click();
@@ -125,6 +125,7 @@ async function main() {
     await page.getByText('Bob', { exact: true }).waitFor();
     await page.getByText('Training Match', { exact: true }).waitFor();
     await page.getByText('Claims central space.', { exact: false }).waitFor();
+    await page.getByText('NAG $1', { exact: false }).first().waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
 
     if (consoleErrors.length > 0) {
