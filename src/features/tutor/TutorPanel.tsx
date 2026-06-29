@@ -36,6 +36,19 @@ export function TutorPanel({ game }: TutorPanelProps) {
           {game.fen}
         </p>
       </div>
+      {game.pgnAnnotations.length > 0 && (
+        <div className="lesson-block">
+          <h3>Comentarios PGN</h3>
+          <ul className="annotation-list">
+            {game.pgnAnnotations.slice(0, 3).map((annotation) => (
+              <li key={annotation.id}>
+                <strong>{annotation.ply === 0 ? 'Inicio' : `Jugada ${annotation.ply ?? '-'}`}</strong>
+                {annotation.value}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="lesson-block">
         <h3>PGN</h3>
         <p>{game.pgn || 'La partida aun no tiene movimientos.'}</p>

@@ -20,10 +20,20 @@ interface ApiGameState {
   fen: string;
   pgn: string;
   pgnHeaders: Record<string, string>;
+  pgnAnnotations: PgnAnnotation[];
   turn: 'white' | 'black';
   result: string;
   legalMoves: string[];
   moves: ApiMove[];
+}
+
+export interface PgnAnnotation {
+  id: string;
+  positionId: string | null;
+  fen: string;
+  ply: number | null;
+  annotationType: 'comment';
+  value: string;
 }
 
 export interface SessionSummary {
@@ -411,6 +421,7 @@ export function useChessGame() {
     fen: state?.fen ?? chess.fen(),
     pgn: state?.pgn ?? '',
     pgnHeaders: state?.pgnHeaders ?? {},
+    pgnAnnotations: state?.pgnAnnotations ?? [],
     turn: state ? turnLabel(state.turn) : 'Cargando',
     result: state?.result ?? '*',
     legalMoveCount: state?.legalMoves.length ?? 0,

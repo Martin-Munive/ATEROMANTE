@@ -113,6 +113,7 @@ Important tables:
 - `match_policies`
 - `games`
 - `pgn_headers`
+- `pgn_annotations`
 - `positions`
 - `moves`
 - `event_log`
@@ -160,13 +161,15 @@ Important tables:
 4. API creates a `pgn-study` session and a game with `source='pgn-import'`.
 5. The importer stores standard PGN headers in `pgn_headers`.
 6. The importer replays the main line, persists every move and position, and updates generated PGN.
-7. React loads the imported game, shows available player/event metadata and refreshes recent sessions.
+7. Main-line comments from `chess.js#getComments()` are stored in `pgn_annotations` and linked to persisted positions when possible.
+8. React loads the imported game, shows available player/event metadata, renders comments in the tutor panel and refreshes recent sessions.
 
 Current scope:
 
 - basic main-line PGN;
 - standard headers such as Event, Site, Date, Round, White, Black and Result;
-- no preserved comments, variations or NAGs yet.
+- main-line comments by FEN/position;
+- no preserved variations or NAGs yet.
 
 ## Adding Features
 
@@ -177,7 +180,7 @@ Recommended path:
 
 1. keep FEN validation in `GameService`;
 2. expand PGN source metadata and file import behind the API;
-3. preserve comments, NAGs and variations in dedicated structures;
+3. preserve NAGs and variations in dedicated structures;
 4. validate parsed moves with `chess.js`;
 5. create a session/game;
 6. persist positions and moves;

@@ -158,7 +158,7 @@ test('local API imports a basic PGN as a study session', async () => {
       '[Black "Bob"]',
       '[Result "*"]',
       '',
-      '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6',
+      '1. e4 {Claims central space.} e5 2. Nf3 Nc6 3. Bb5 a6',
     ].join('\n');
     const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
       method: 'POST',
@@ -173,6 +173,8 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(imported.pgnHeaders.Event, 'Training Match');
     assert.equal(imported.pgnHeaders.White, 'Alice');
     assert.equal(imported.pgnHeaders.Black, 'Bob');
+    assert.equal(imported.pgnAnnotations.length, 1);
+    assert.equal(imported.pgnAnnotations[0].value, 'Claims central space.');
     assert.match(imported.pgn, /1\. e4 e5 2\. Nf3 Nc6 3\. Bb5 a6/);
 
     const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=1`);

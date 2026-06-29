@@ -113,6 +113,25 @@ test('GameService preserves PGN headers and imported result', () => {
   closeDatabase(db);
 });
 
+test('GameService preserves PGN comments by position', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: '1. e4 {Claims central space.} e5 2. Nf3 {Develops with tempo.} Nc6',
+  });
+  const timeline = service.getGameState(imported.game.id);
+
+  assert.equal(timeline.pgnAnnotations.length, 2);
+  assert.equal(timeline.pgnAnnotations[0].annotation_type, 'comment');
+  assert.equal(timeline.pgnAnnotations[0].value, 'Claims central space.');
+  assert.equal(timeline.pgnAnnotations[0].ply, 1);
+  assert.equal(timeline.pgnAnnotations[1].value, 'Develops with tempo.');
+  assert.equal(timeline.pgnAnnotations[1].ply, 3);
+
+  closeDatabase(db);
+});
+
 test('GameService rejects invalid PGN before creating a game', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

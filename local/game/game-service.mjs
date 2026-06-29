@@ -82,6 +82,7 @@ function parsePgn(pgn) {
     }
     return {
       headers: chess.getHeaders(),
+      comments: chess.getComments(),
       moves,
     };
   } catch (error) {
@@ -160,6 +161,7 @@ export class GameService {
     const chess = new Chess(created.game.initial_fen);
     let positionBefore = created.currentPosition;
     let linkedMove = null;
+    const positionsByFen = new Map([[created.currentPosition.fen, created.currentPosition]]);
 
     this.games.recordPgnHeaders({ gameId: created.game.id, headers: parsed.headers });
 
@@ -200,7 +202,22 @@ export class GameService {
         positionAfterId: positionAfter.id,
       });
       positionBefore = positionAfter;
+      positionsByFen.set(positionAfter.fen, positionAfter);
     }
+
+    this.games.recordPgnAnnotations({
+      gameId: created.game.id,
+      annotations: parsed.comments.map((comment) => {
+        const position = positionsByFen.get(comment.fen);
+        return {
+          positionId: position?.id ?? null,
+          fen: comment.fen,
+          ply: position?.ply ?? null,
+          annotationType: 'comment',
+          value: comment.comment,
+        };
+      }),
+    });
 
     const updatedGame = this.games.updateGameNotation({
       gameId: created.game.id,

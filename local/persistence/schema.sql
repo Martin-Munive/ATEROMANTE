@@ -73,6 +73,17 @@ CREATE TABLE IF NOT EXISTS pgn_headers (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS pgn_annotations (
+  id TEXT PRIMARY KEY,
+  game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+  position_id TEXT REFERENCES positions(id) ON DELETE SET NULL,
+  fen TEXT NOT NULL,
+  ply INTEGER CHECK (ply >= 0),
+  annotation_type TEXT NOT NULL CHECK (annotation_type IN ('comment')),
+  value TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS positions (
   id TEXT PRIMARY KEY,
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,

@@ -373,10 +373,41 @@ export class GameRepository {
     };
   }
 
+  recordPgnAnnotations({ gameId, annotations = [] }) {
+    const timestamp = nowIso();
+    const insert = this.db.prepare(`
+      INSERT INTO pgn_annotations (
+        id, game_id, position_id, fen, ply, annotation_type, value, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const annotation of annotations) {
+      insert.run(
+        id('ann'),
+        gameId,
+        annotation.positionId ?? null,
+        annotation.fen,
+        annotation.ply ?? null,
+        annotation.annotationType,
+        annotation.value,
+        timestamp,
+      );
+    }
+
+    return this.listPgnAnnotations(gameId);
+  }
+
+  listPgnAnnotations(gameId) {
+    return this.db
+      .prepare('SELECT * FROM pgn_annotations WHERE game_id = ? ORDER BY COALESCE(ply, 0), created_at ASC')
+      .all(gameId);
+  }
+
   getGameTimeline(gameId) {
     return {
       game: this.getGame(gameId),
       pgnHeaders: this.getPgnHeaders(gameId),
+      pgnAnnotations: this.listPgnAnnotations(gameId),
       positions: this.db.prepare('SELECT * FROM positions WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       moves: this.db.prepare('SELECT * FROM moves WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       events: this.eventLog.listEventsByGame(gameId),
