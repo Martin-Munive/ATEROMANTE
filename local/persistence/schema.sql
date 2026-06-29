@@ -84,6 +84,18 @@ CREATE TABLE IF NOT EXISTS pgn_annotations (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS pgn_variations (
+  id TEXT PRIMARY KEY,
+  game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+  parent_ply INTEGER CHECK (parent_ply >= 0),
+  parent_fen TEXT,
+  variation_index INTEGER NOT NULL CHECK (variation_index >= 0),
+  depth INTEGER NOT NULL DEFAULT 1 CHECK (depth >= 1),
+  san_line TEXT NOT NULL,
+  raw_pgn TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS positions (
   id TEXT PRIMARY KEY,
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
@@ -213,6 +225,7 @@ CREATE INDEX IF NOT EXISTS idx_games_opening_result ON games(opening_eco, result
 CREATE INDEX IF NOT EXISTS idx_positions_fen_hash ON positions(fen_hash);
 CREATE INDEX IF NOT EXISTS idx_positions_phase ON positions(phase);
 CREATE INDEX IF NOT EXISTS idx_moves_game_ply ON moves(game_id, ply);
+CREATE INDEX IF NOT EXISTS idx_pgn_variations_game_parent ON pgn_variations(game_id, parent_ply);
 CREATE INDEX IF NOT EXISTS idx_moves_classification ON moves(classification);
 CREATE INDEX IF NOT EXISTS idx_events_session_sequence ON event_log(session_id, sequence);
 CREATE INDEX IF NOT EXISTS idx_events_game_sequence ON event_log(game_id, sequence);

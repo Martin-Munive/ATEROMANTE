@@ -403,11 +403,43 @@ export class GameRepository {
       .all(gameId);
   }
 
+  recordPgnVariations({ gameId, variations = [] }) {
+    const timestamp = nowIso();
+    const insert = this.db.prepare(`
+      INSERT INTO pgn_variations (
+        id, game_id, parent_ply, parent_fen, variation_index, depth, san_line, raw_pgn, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const variation of variations) {
+      insert.run(
+        id('var'),
+        gameId,
+        variation.parentPly ?? null,
+        variation.parentFen ?? null,
+        variation.variationIndex,
+        variation.depth ?? 1,
+        variation.sanLine,
+        variation.rawPgn,
+        timestamp,
+      );
+    }
+
+    return this.listPgnVariations(gameId);
+  }
+
+  listPgnVariations(gameId) {
+    return this.db
+      .prepare('SELECT * FROM pgn_variations WHERE game_id = ? ORDER BY variation_index ASC')
+      .all(gameId);
+  }
+
   getGameTimeline(gameId) {
     return {
       game: this.getGame(gameId),
       pgnHeaders: this.getPgnHeaders(gameId),
       pgnAnnotations: this.listPgnAnnotations(gameId),
+      pgnVariations: this.listPgnVariations(gameId),
       positions: this.db.prepare('SELECT * FROM positions WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       moves: this.db.prepare('SELECT * FROM moves WHERE game_id = ? ORDER BY ply ASC').all(gameId),
       events: this.eventLog.listEventsByGame(gameId),

@@ -21,6 +21,7 @@ interface ApiGameState {
   pgn: string;
   pgnHeaders: Record<string, string>;
   pgnAnnotations: PgnAnnotation[];
+  pgnVariations: PgnVariation[];
   turn: 'white' | 'black';
   result: string;
   legalMoves: string[];
@@ -34,6 +35,16 @@ export interface PgnAnnotation {
   ply: number | null;
   annotationType: 'comment' | 'nag';
   value: string;
+}
+
+export interface PgnVariation {
+  id: string;
+  parentPly: number | null;
+  parentFen: string | null;
+  variationIndex: number;
+  depth: number;
+  sanLine: string;
+  rawPgn: string;
 }
 
 export interface SessionSummary {
@@ -422,6 +433,7 @@ export function useChessGame() {
     pgn: state?.pgn ?? '',
     pgnHeaders: state?.pgnHeaders ?? {},
     pgnAnnotations: state?.pgnAnnotations ?? [],
+    pgnVariations: state?.pgnVariations ?? [],
     turn: state ? turnLabel(state.turn) : 'Cargando',
     result: state?.result ?? '*',
     legalMoveCount: state?.legalMoves.length ?? 0,

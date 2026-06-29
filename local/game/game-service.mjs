@@ -109,6 +109,14 @@ function tokenizeMainLinePgn(pgn) {
     .filter(Boolean);
 }
 
+function normalizePgnToken(token) {
+  if (!token || ['1-0', '0-1', '1/2-1/2', '*'].includes(token) || /^\$\d+$/.test(token)) {
+    return null;
+  }
+  const suffix = token.match(/(!!|\?\?|!\?|\?!|!|\?)$/)?.[0] ?? null;
+  return suffix ? token.slice(0, -suffix.length) : token;
+}
+
 function parseNagAnnotations(pgn) {
   const chess = new Chess();
   const annotations = [];
@@ -128,7 +136,10 @@ function parseNagAnnotations(pgn) {
     }
 
     const suffix = token.match(/(!!|\?\?|!\?|\?!|!|\?)$/)?.[0] ?? null;
-    const san = suffix ? token.slice(0, -suffix.length) : token;
+    const san = normalizePgnToken(token);
+    if (!san) {
+      continue;
+    }
     let applied = null;
     try {
       applied = chess.move(san);
@@ -149,6 +160,119 @@ function parseNagAnnotations(pgn) {
   return annotations;
 }
 
+function normalizeVariationText(input) {
+  return input
+    .replace(/\{[^}]*\}/g, ' ')
+    .replace(/;[^\r\n]*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function variationSanLine(input) {
+  return normalizeVariationText(input)
+    .split(/\s+/)
+    .filter((token) => token && !/^\d+\.(\.\.)?$/.test(token))
+    .join(' ');
+}
+
+function parsePgnVariations(pgn) {
+  const source = pgn.replace(/^\s*\[[^\]]+\]\s*$/gm, ' ');
+  const chess = new Chess();
+  const variations = [];
+  let token = '';
+  let currentFen = chess.fen();
+  let currentPly = 0;
+  let inComment = false;
+  let inSemicolonComment = false;
+
+  function applyMainToken() {
+    const rawToken = token.trim();
+    token = '';
+    if (!rawToken || /^\d+\.(\.\.)?$/.test(rawToken)) {
+      return;
+    }
+    const san = normalizePgnToken(rawToken);
+    if (!san) {
+      return;
+    }
+    try {
+      const move = chess.move(san);
+      if (move) {
+        currentFen = chess.fen();
+        currentPly = chess.history().length;
+      }
+    } catch {
+      // Main-line legality is validated by chess.js loadPgn before persistence.
+    }
+  }
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+
+    if (inSemicolonComment) {
+      if (character === '\n' || character === '\r') {
+        inSemicolonComment = false;
+      }
+      continue;
+    }
+    if (inComment) {
+      if (character === '}') {
+        inComment = false;
+      }
+      continue;
+    }
+    if (character === ';') {
+      applyMainToken();
+      inSemicolonComment = true;
+      continue;
+    }
+    if (character === '{') {
+      applyMainToken();
+      inComment = true;
+      continue;
+    }
+    if (character === '(') {
+      applyMainToken();
+      let depth = 1;
+      let raw = '';
+      index += 1;
+      for (; index < source.length && depth > 0; index += 1) {
+        const inner = source[index];
+        if (inner === '(') {
+          depth += 1;
+        } else if (inner === ')') {
+          depth -= 1;
+          if (depth === 0) {
+            break;
+          }
+        }
+        raw += inner;
+      }
+      const rawPgn = normalizeVariationText(raw);
+      if (rawPgn) {
+        variations.push({
+          parentFen: currentFen,
+          parentPly: currentPly,
+          variationIndex: variations.length,
+          depth: 1,
+          sanLine: variationSanLine(rawPgn),
+          rawPgn,
+        });
+      }
+      continue;
+    }
+    if (/\s/.test(character)) {
+      applyMainToken();
+      continue;
+    }
+
+    token += character;
+  }
+  applyMainToken();
+
+  return variations;
+}
+
 function parsePgn(pgn) {
   if (typeof pgn !== 'string' || pgn.trim() === '') {
     throw new InvalidPgnError('PGN input is required');
@@ -165,6 +289,7 @@ function parsePgn(pgn) {
       headers: chess.getHeaders(),
       comments: chess.getComments(),
       nags: parseNagAnnotations(pgn),
+      variations: parsePgnVariations(pgn),
       moves,
     };
   } catch (error) {
@@ -308,6 +433,10 @@ export class GameService {
           value: nag.value,
         };
       })),
+    });
+    this.games.recordPgnVariations({
+      gameId: created.game.id,
+      variations: parsed.variations,
     });
 
     const updatedGame = this.games.updateGameNotation({

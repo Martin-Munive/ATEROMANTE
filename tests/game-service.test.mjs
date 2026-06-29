@@ -149,6 +149,23 @@ test('GameService preserves PGN NAGs and suffix annotations by position', () => 
   closeDatabase(db);
 });
 
+test('GameService preserves PGN variations with a main-line anchor', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: '1. e4 e5 (1... c5 2. Nf3) 2. Nf3 Nc6',
+  });
+  const timeline = service.getGameState(imported.game.id);
+
+  assert.equal(timeline.pgnVariations.length, 1);
+  assert.equal(timeline.pgnVariations[0].parent_ply, 2);
+  assert.equal(timeline.pgnVariations[0].san_line, 'c5 Nf3');
+  assert.equal(timeline.pgnVariations[0].raw_pgn, '1... c5 2. Nf3');
+
+  closeDatabase(db);
+});
+
 test('GameService rejects invalid PGN before creating a game', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

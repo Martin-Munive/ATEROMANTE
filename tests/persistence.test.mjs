@@ -38,6 +38,7 @@ test('migration creates the normalized persistence core', () => {
     'moves',
     'pgn_annotations',
     'pgn_headers',
+    'pgn_variations',
     'positions',
     'review_items',
     'study_sessions',
@@ -119,6 +120,17 @@ test('repositories persist a session, game, positions, move and timeline events'
       value: '$1',
     }],
   });
+  const variations = games.recordPgnVariations({
+    gameId: game.id,
+    variations: [{
+      parentPly: 1,
+      parentFen: after.fen,
+      variationIndex: 0,
+      depth: 1,
+      sanLine: '1... c5',
+      rawPgn: '1... c5',
+    }],
+  });
 
   const timeline = games.getGameTimeline(game.id);
   assert.equal(timeline.game.id, game.id);
@@ -128,6 +140,8 @@ test('repositories persist a session, game, positions, move and timeline events'
   assert.equal(timeline.pgnAnnotations[0].position_id, after.id);
   assert.equal(timeline.pgnAnnotations[1].annotation_type, 'nag');
   assert.equal(timeline.pgnAnnotations[1].value, '$1');
+  assert.equal(variations[0].san_line, '1... c5');
+  assert.equal(timeline.pgnVariations[0].parent_ply, 1);
   assert.equal(timeline.moves[0].san, 'e4');
   assert.equal(timeline.positions.length, 2);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [

@@ -9,12 +9,12 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - reopen recent sessions from the sidebar history;
 - paste a FEN position and open it as a new study session;
 - paste a basic PGN main line and open it as a persisted study session;
-- preserve standard PGN headers, main-line comments and main-line NAG annotations;
+- preserve standard PGN headers, main-line comments, main-line NAG annotations and imported PGN variations;
 - request engine analysis through a configured external UCI engine;
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
 
-It does not yet include PGN variations, real LLM tutoring, reports, online connectors or networked training rooms.
+It does not yet include full interactive PGN variation playback, real LLM tutoring, reports, online connectors or networked training rooms.
 
 ## Install And Run
 Install dependencies from the project root:
@@ -80,11 +80,11 @@ Use the `Importar PGN` panel in the sidebar to paste a basic PGN main line.
 
 Click `Abrir PGN` to create a new `pgn-study` session.
 
-The current importer validates moves with `chess.js`, persists every move and position, stores PGN headers such as event, site, players and result, preserves main-line comments and NAGs by position, and refreshes the session history. Invalid PGN input is rejected before creating a game.
+The current importer validates moves with `chess.js`, persists every move and position, stores PGN headers such as event, site, players and result, preserves main-line comments and NAGs by position, stores imported PGN variations, and refreshes the session history. Invalid PGN input is rejected before creating a game.
 
 Supported NAG input includes numeric annotations such as `$1` and common suffix annotations such as `!`, `?`, `!!`, `??`, `!?` and `?!`.
 
-The current PGN slice is intentionally main-line first. Variations are planned for later import phases.
+The current PGN slice is intentionally main-line first. Imported variations are preserved and shown in the variation panel, but branch playback and full variation-tree navigation are planned for later import phases.
 
 ## Engine Analysis
 The engine panel can analyze the current persisted position.
@@ -134,7 +134,7 @@ npm run qa:interaction
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import currently supports a basic main line, standard headers, comments and NAG annotations; variations are not preserved yet.
+- PGN import currently supports a basic main line, standard headers, comments, NAG annotations and preserved variation text; interactive variation playback is not implemented yet.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

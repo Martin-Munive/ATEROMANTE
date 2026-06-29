@@ -101,6 +101,7 @@ interface VariationTreeProps {
 
 export function VariationTree({ game }: VariationTreeProps) {
   const variation = game.analysis?.principalVariation.join(' ') ?? 'Variantes del motor pendientes de análisis.';
+  const importedVariations = game.pgnVariations.slice(0, 3);
 
   return (
     <section className="bottom-panel variation-tree">
@@ -110,6 +111,12 @@ export function VariationTree({ game }: VariationTreeProps) {
           <strong>{game.analysis ? `d${game.analysis.depth}` : '--'}</strong>
           <span>{variation}</span>
         </div>
+        {importedVariations.map((pgnVariation) => (
+          <div className="variation" key={pgnVariation.id}>
+            <strong>{`PGN ${pgnVariation.parentPly ?? 0}`}</strong>
+            <span>{pgnVariation.sanLine}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
