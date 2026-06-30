@@ -138,6 +138,16 @@ export function VariationTree({ game }: VariationTreeProps) {
           <span>{preview.moves.length > 0 ? preview.moves.join(' ') : 'Posición de anclaje'}</span>
           <div>
             <button
+              aria-label="Abrir variante como estudio"
+              disabled={preview.totalPlies === 0}
+              onClick={() => {
+                void game.openVariationAsStudy();
+              }}
+              type="button"
+            >
+              <Play size={16} />
+            </button>
+            <button
               aria-label="Retroceder variante"
               disabled={!preview.canStepBack}
               onClick={() => game.stepVariation(-1)}

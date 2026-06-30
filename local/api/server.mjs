@@ -226,6 +226,17 @@ export function createAteromanteApiServer({
         return;
       }
 
+      const variationStudyMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/variations\/(\d+)\/study$/);
+      if (request.method === 'POST' && variationStudyMatch) {
+        const imported = service.createStudyFromVariation({
+          gameId: variationStudyMatch[1],
+          variationIndex: variationStudyMatch[2],
+        });
+        const state = service.getGameState(imported.game.id);
+        sendJson(response, 201, serializeState(state));
+        return;
+      }
+
       const gameMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
       if (request.method === 'GET' && gameMatch) {
         const state = service.getGameState(gameMatch[1]);

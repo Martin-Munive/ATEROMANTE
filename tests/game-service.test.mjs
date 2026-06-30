@@ -186,6 +186,34 @@ test('GameService preserves nested PGN variations with parent indexes', () => {
   closeDatabase(db);
 });
 
+test('GameService creates a new study from a PGN variation', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: '1. e4 e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 Nc6',
+  });
+  const rootStudy = service.createStudyFromVariation({
+    gameId: imported.game.id,
+    variationIndex: 0,
+  });
+  const nestedStudy = service.createStudyFromVariation({
+    gameId: imported.game.id,
+    variationIndex: 1,
+  });
+
+  const rootTimeline = service.getGameState(rootStudy.game.id);
+  const nestedTimeline = service.getGameState(nestedStudy.game.id);
+  const originalTimeline = service.getGameState(imported.game.id);
+
+  assert.equal(rootTimeline.game.source, 'pgn-variation');
+  assert.deepEqual(rootTimeline.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
+  assert.deepEqual(nestedTimeline.moves.map((move) => move.san), ['e4', 'e6']);
+  assert.deepEqual(originalTimeline.moves.map((move) => move.san), ['e4', 'e5', 'Nf3', 'Nc6']);
+
+  closeDatabase(db);
+});
+
 test('GameService preserves PGN source metadata without local paths', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

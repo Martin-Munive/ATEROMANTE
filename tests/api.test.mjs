@@ -198,6 +198,15 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(sessions.sessions[0].mode, 'pgn-study');
     assert.equal(sessions.sessions[0].moveCount, 6);
     assert.equal(sessions.sessions[0].gameId, imported.gameId);
+
+    const variationStudyResponse = await fetch(`${baseUrl}/api/games/${imported.gameId}/variations/0/study`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(variationStudyResponse.status, 201);
+    const variationStudy = await readJson(variationStudyResponse);
+    assert.deepEqual(variationStudy.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
   });
 });
 

@@ -477,6 +477,33 @@ export function useChessGame() {
     setActiveVariationPly((current) => Math.max(0, Math.min(totalPlies, current + delta)));
   }
 
+  async function openVariationAsStudy() {
+    if (!state || !activeVariation) {
+      return null;
+    }
+    setLoading(true);
+    setSelectedSquare(null);
+    setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
+    try {
+      const imported = await postJson<ApiGameState>(
+        `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/study`,
+        {},
+      );
+      setState(imported);
+      setActiveVariationId(null);
+      setActiveVariationPly(0);
+      await refreshRecentSessions();
+      return imported;
+    } catch (error) {
+      setLastError(error instanceof Error ? error.message : 'No se pudo abrir la variante como estudio.');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function analyzePosition(depth = 12) {
     if (!state || analysisLoading) {
       return null;
@@ -541,5 +568,6 @@ export function useChessGame() {
     openVariation,
     closeVariation,
     stepVariation,
+    openVariationAsStudy,
   };
 }

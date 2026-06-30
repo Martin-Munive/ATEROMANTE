@@ -165,7 +165,7 @@ Important tables:
 8. Main-line NAGs are parsed from numeric `$n` tokens and common suffix annotations, stored in `pgn_annotations` with `annotation_type='nag'`, and linked to persisted positions when possible.
 9. PGN source metadata is stored in `pgn_sources`, including source type, sanitized file name, optional MIME type, byte size and SHA-256 hash.
 10. Imported PGN variations and subvariations are stored in `pgn_variations` with their raw text, normalized SAN line, main-line anchor, depth and parent variation index.
-11. React loads the imported game, shows available player/event/source metadata, renders comments and NAGs in the tutor panel, shows imported variation lines, supports temporary variation playback, and refreshes recent sessions.
+11. React loads the imported game, shows available player/event/source metadata, renders comments and NAGs in the tutor panel, shows imported variation lines, supports temporary variation playback, can open a branch as a new `variation-study`, and refreshes recent sessions.
 
 Current scope:
 
@@ -178,6 +178,7 @@ Current scope:
 - preserved variation text anchored to the main line;
 - nested variation depth and parent relation;
 - temporary interactive variation playback in the browser;
+- branch-to-study creation through `POST /api/games/:gameId/variations/:variationIndex/study`;
 - no variation editing yet.
 
 ## Adding Features

@@ -62,6 +62,7 @@ Evidence:
 - Nested PGN subvariations are stored with `depth` and `parent_variation_index`, then rendered with visual indentation.
 - Browser-read `.pgn` imports store sanitized source metadata in `pgn_sources`; local filesystem paths are stripped and not persisted.
 - Variation playback reconstructs temporary board states in the browser from the persisted branch anchor without mutating the saved main line.
+- Opening a variation as study creates a new `variation-study` session instead of rewriting the imported source game.
 
 Criteria:
 - no private material in public project;

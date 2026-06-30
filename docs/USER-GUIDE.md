@@ -88,6 +88,8 @@ Supported NAG input includes numeric annotations such as `$1` and common suffix 
 
 The current PGN slice is intentionally main-line first. Imported variations and nested subvariations are preserved and shown in the variation panel. Click a PGN variation to open it as a temporary branch, then use the variation arrows to step forward or backward without changing the saved main line.
 
+Use the play button in the variation playback controls to open the selected branch as a new `variation-study` session. This creates a separate study line and keeps the original imported game unchanged.
+
 ## Engine Analysis
 The engine panel can analyze the current persisted position.
 
@@ -136,7 +138,7 @@ npm run qa:interaction
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text and temporary variation playback.
+- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback and opening a branch as a new study.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

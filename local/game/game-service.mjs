@@ -207,6 +207,21 @@ function variationSanLine(input) {
     .join(' ');
 }
 
+function variationTokensFromSanLine(sanLine) {
+  return sanLine.split(/\s+/).map((token) => token.trim()).filter(Boolean);
+}
+
+function sanMovesToPgn(sanMoves) {
+  const turns = [];
+  for (let index = 0; index < sanMoves.length; index += 2) {
+    const moveNumber = Math.floor(index / 2) + 1;
+    const white = sanMoves[index] ?? '';
+    const black = sanMoves[index + 1] ?? '';
+    turns.push(`${moveNumber}. ${white}${black ? ` ${black}` : ''}`);
+  }
+  return turns.join(' ');
+}
+
 function collectVariationBody(source, startIndex) {
   let depth = 1;
   let raw = '';
@@ -453,6 +468,31 @@ function parsePgn(pgn) {
   }
 }
 
+function buildVariationMainLine({ mainMoves, variations, variationIndex }) {
+  const byIndex = new Map(variations.map((variation) => [variation.variation_index, variation]));
+  const selected = byIndex.get(variationIndex);
+  if (!selected) {
+    throw new InvalidPgnError('PGN variation was not found');
+  }
+
+  function prefixFor(variation) {
+    if (variation.parent_variation_index === null || variation.parent_variation_index === undefined) {
+      return mainMoves.slice(0, variation.parent_ply ?? 0);
+    }
+
+    const parent = byIndex.get(variation.parent_variation_index);
+    if (!parent) {
+      return mainMoves.slice(0, variation.parent_ply ?? 0);
+    }
+    const parentPrefix = prefixFor(parent);
+    const parentAnchorPly = parent.parent_ply ?? parentPrefix.length;
+    const branchPliesToAnchor = Math.max(0, (variation.parent_ply ?? parentAnchorPly) - parentAnchorPly);
+    return parentPrefix.concat(variationTokensFromSanLine(parent.san_line).slice(0, branchPliesToAnchor));
+  }
+
+  return prefixFor(selected).concat(variationTokensFromSanLine(selected.san_line));
+}
+
 export class GameService {
   constructor({
     db,
@@ -630,6 +670,33 @@ export class GameService {
       legalMoves: chess.moves(),
       result: liveResult !== '*' ? liveResult : timeline.game.result,
     };
+  }
+
+  createStudyFromVariation({ gameId, variationIndex }) {
+    const timeline = this.games.getGameTimeline(gameId);
+    if (!timeline.game) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+    const selectedIndex = Number.parseInt(String(variationIndex), 10);
+    if (!Number.isInteger(selectedIndex) || selectedIndex < 0) {
+      throw new InvalidPgnError('PGN variation index is invalid');
+    }
+
+    const sanMoves = buildVariationMainLine({
+      mainMoves: timeline.moves.map((move) => move.san),
+      variations: timeline.pgnVariations,
+      variationIndex: selectedIndex,
+    });
+
+    return this.importPgn({
+      pgn: sanMovesToPgn(sanMoves),
+      mode: 'variation-study',
+      source: 'pgn-variation',
+      externalId: `${gameId}:${selectedIndex}`,
+      sourceMetadata: {
+        sourceType: 'text',
+      },
+    });
   }
 
   listRecentTrainingGames(limit = 8) {
