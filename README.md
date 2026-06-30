@@ -92,6 +92,7 @@ Implementado:
 - preservacion de comentarios PGN de linea principal vinculados a posiciones;
 - preservacion de NAGs PGN de linea principal y anotaciones de sufijo;
 - preservacion inicial de variantes PGN importadas y visualizacion en el panel de variantes;
+- preservacion de subvariantes PGN con profundidad y relacion padre-hijo;
 - playback temporal de variantes PGN importadas sin mutar la linea principal guardada;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
@@ -101,7 +102,7 @@ Implementado:
 
 Pendiente:
 
-- soporte PGN avanzado: edicion/arbol recursivo de variantes y metadatos de fuente enriquecidos para conectores;
+- soporte PGN avanzado: edicion de variantes y metadatos de fuente enriquecidos para conectores;
 - tutor LLM configurable por API;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.

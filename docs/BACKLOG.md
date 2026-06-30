@@ -10,6 +10,7 @@
 - Preserve main-line PGN comments.
 - Preserve main-line PGN NAGs and suffix annotations.
 - Preserve imported PGN variation text with main-line anchors.
+- Preserve nested PGN variation parent-child structure.
 - Import browser-read `.pgn` files with sanitized source metadata.
 - Add temporary PGN variation playback.
 - Store games and moves in SQLite.
@@ -18,7 +19,7 @@
 - Draw basic educational overlays.
 
 ## MVP 1 - Post-Game Tutor
-- Add recursive PGN variation tree editing and navigation.
+- Add PGN variation editing and promotion to main line.
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.

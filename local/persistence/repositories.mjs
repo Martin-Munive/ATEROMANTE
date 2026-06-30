@@ -443,8 +443,8 @@ export class GameRepository {
     const timestamp = nowIso();
     const insert = this.db.prepare(`
       INSERT INTO pgn_variations (
-        id, game_id, parent_ply, parent_fen, variation_index, depth, san_line, raw_pgn, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, game_id, parent_ply, parent_fen, parent_variation_index, variation_index, depth, san_line, raw_pgn, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const variation of variations) {
@@ -453,6 +453,7 @@ export class GameRepository {
         gameId,
         variation.parentPly ?? null,
         variation.parentFen ?? null,
+        variation.parentVariationIndex ?? null,
         variation.variationIndex,
         variation.depth ?? 1,
         variation.sanLine,

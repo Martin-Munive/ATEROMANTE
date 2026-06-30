@@ -164,7 +164,7 @@ Important tables:
 7. Main-line comments from `chess.js#getComments()` are stored in `pgn_annotations` and linked to persisted positions when possible.
 8. Main-line NAGs are parsed from numeric `$n` tokens and common suffix annotations, stored in `pgn_annotations` with `annotation_type='nag'`, and linked to persisted positions when possible.
 9. PGN source metadata is stored in `pgn_sources`, including source type, sanitized file name, optional MIME type, byte size and SHA-256 hash.
-10. Imported PGN variations are stored in `pgn_variations` with their raw text, normalized SAN line and main-line anchor.
+10. Imported PGN variations and subvariations are stored in `pgn_variations` with their raw text, normalized SAN line, main-line anchor, depth and parent variation index.
 11. React loads the imported game, shows available player/event/source metadata, renders comments and NAGs in the tutor panel, shows imported variation lines, supports temporary variation playback, and refreshes recent sessions.
 
 Current scope:
@@ -176,8 +176,9 @@ Current scope:
 - main-line comments by FEN/position;
 - main-line NAGs by FEN/position;
 - preserved variation text anchored to the main line;
+- nested variation depth and parent relation;
 - temporary interactive variation playback in the browser;
-- no recursive variation editing yet.
+- no variation editing yet.
 
 ## Adding Features
 
@@ -188,7 +189,7 @@ Recommended path:
 
 1. keep FEN validation in `GameService`;
 2. expand PGN source metadata if connector-specific fields are needed;
-3. expand variation playback into recursive branch navigation and editing when the UI model is ready;
+3. expand variation playback into branch editing when the UI model is ready;
 4. validate parsed moves with `chess.js`;
 5. create a session/game;
 6. persist positions and moves;

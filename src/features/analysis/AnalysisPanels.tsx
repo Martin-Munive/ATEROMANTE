@@ -122,11 +122,12 @@ export function VariationTree({ game }: VariationTreeProps) {
         {importedVariations.map((pgnVariation) => (
           <button
             className={`variation ${preview?.variation.id === pgnVariation.id ? 'selected' : ''}`}
+            data-depth={pgnVariation.depth}
             key={pgnVariation.id}
             onClick={() => game.openVariation(pgnVariation.id)}
             type="button"
           >
-            <strong>{`PGN ${pgnVariation.parentPly ?? 0}`}</strong>
+            <strong>{`PGN ${pgnVariation.depth}.${pgnVariation.parentPly ?? 0}`}</strong>
             <span>{pgnVariation.sanLine}</span>
           </button>
         ))}

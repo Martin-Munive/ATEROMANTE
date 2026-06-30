@@ -114,7 +114,7 @@ async function main() {
       '[Black "Bob"]',
       '[Result "*"]',
       '',
-      '1. e4! {Claims central space.} e5 (1... c5 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
+      '1. e4! {Claims central space.} e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
     ].join('\n');
     const importedPgnPath = resolve(artifactsDir, 'training-match.pgn');
     await writeFile(importedPgnPath, importedPgn, 'utf8');
@@ -128,8 +128,9 @@ async function main() {
     await page.getByText('Claims central space.', { exact: false }).waitFor();
     await page.getByText('NAG $1', { exact: false }).first().waitFor();
     await page.getByText('c5 Nf3', { exact: false }).waitFor();
+    await page.getByText('e6', { exact: true }).waitFor();
     await page.getByText('training-match.pgn', { exact: true }).waitFor();
-    await page.getByRole('button', { name: /c5 Nf3/ }).click();
+    await page.getByRole('button', { name: /PGN 1\.1.*c5 Nf3/ }).click();
     await page.getByText('Variante PGN', { exact: true }).waitFor();
     await page.getByText('0/2', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Avanzar variante' }).click();

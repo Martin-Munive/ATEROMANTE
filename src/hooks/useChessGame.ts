@@ -42,6 +42,7 @@ export interface PgnVariation {
   id: string;
   parentPly: number | null;
   parentFen: string | null;
+  parentVariationIndex: number | null;
   variationIndex: number;
   depth: number;
   sanLine: string;

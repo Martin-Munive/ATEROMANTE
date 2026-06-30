@@ -59,6 +59,7 @@ Evidence:
 - Main-line PGN comments are stored in `pgn_annotations` by FEN/position and rendered in the tutor panel.
 - Main-line PGN NAGs and suffix annotations are stored in `pgn_annotations` as `annotation_type='nag'` by FEN/position and rendered in the tutor panel.
 - Imported PGN variations are stored in `pgn_variations` with raw PGN text, normalized SAN line and main-line anchor, then rendered in the variation panel.
+- Nested PGN subvariations are stored with `depth` and `parent_variation_index`, then rendered with visual indentation.
 - Browser-read `.pgn` imports store sanitized source metadata in `pgn_sources`; local filesystem paths are stripped and not persisted.
 - Variation playback reconstructs temporary board states in the browser from the persisted branch anchor without mutating the saved main line.
 

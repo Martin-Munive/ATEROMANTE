@@ -35,6 +35,10 @@ export function openAteromanteDatabase(dbPath = ':memory:') {
 export function migrate(db) {
   const schema = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');
   db.exec(schema);
+  ensureColumn(db, 'pgn_variations', 'parent_variation_index', `
+    ALTER TABLE pgn_variations
+    ADD COLUMN parent_variation_index INTEGER CHECK (parent_variation_index IS NULL OR parent_variation_index >= 0)
+  `);
 
   const existing = db
     .prepare('SELECT version FROM schema_migrations WHERE version = ?')
@@ -43,6 +47,13 @@ export function migrate(db) {
   if (!existing) {
     db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
       .run(SCHEMA_VERSION, 'initial_event_log_schema', nowIso());
+  }
+}
+
+function ensureColumn(db, tableName, columnName, alterSql) {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+  if (!columns.some((column) => column.name === columnName)) {
+    db.exec(alterSql);
   }
 }
 

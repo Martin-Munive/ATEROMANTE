@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS pgn_variations (
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   parent_ply INTEGER CHECK (parent_ply >= 0),
   parent_fen TEXT,
+  parent_variation_index INTEGER CHECK (parent_variation_index IS NULL OR parent_variation_index >= 0),
   variation_index INTEGER NOT NULL CHECK (variation_index >= 0),
   depth INTEGER NOT NULL DEFAULT 1 CHECK (depth >= 1),
   san_line TEXT NOT NULL,

@@ -126,6 +126,7 @@ test('repositories persist a session, game, positions, move and timeline events'
     variations: [{
       parentPly: 1,
       parentFen: after.fen,
+      parentVariationIndex: null,
       variationIndex: 0,
       depth: 1,
       sanLine: '1... c5',
@@ -151,6 +152,7 @@ test('repositories persist a session, game, positions, move and timeline events'
   assert.equal(timeline.pgnAnnotations[1].value, '$1');
   assert.equal(variations[0].san_line, '1... c5');
   assert.equal(timeline.pgnVariations[0].parent_ply, 1);
+  assert.equal(timeline.pgnVariations[0].parent_variation_index, null);
   assert.equal(source.file_name, 'training-game.pgn');
   assert.equal(timeline.pgnSource.source_type, 'file');
   assert.equal(timeline.moves[0].san, 'e4');

@@ -166,6 +166,26 @@ test('GameService preserves PGN variations with a main-line anchor', () => {
   closeDatabase(db);
 });
 
+test('GameService preserves nested PGN variations with parent indexes', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: '1. e4 e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 Nc6',
+  });
+  const timeline = service.getGameState(imported.game.id);
+
+  assert.equal(timeline.pgnVariations.length, 2);
+  assert.equal(timeline.pgnVariations[0].depth, 1);
+  assert.equal(timeline.pgnVariations[0].parent_variation_index, null);
+  assert.equal(timeline.pgnVariations[0].san_line, 'c5 Nf3');
+  assert.equal(timeline.pgnVariations[1].depth, 2);
+  assert.equal(timeline.pgnVariations[1].parent_variation_index, 0);
+  assert.equal(timeline.pgnVariations[1].san_line, 'e6');
+
+  closeDatabase(db);
+});
+
 test('GameService preserves PGN source metadata without local paths', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

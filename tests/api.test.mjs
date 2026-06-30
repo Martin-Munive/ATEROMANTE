@@ -158,7 +158,7 @@ test('local API imports a basic PGN as a study session', async () => {
       '[Black "Bob"]',
       '[Result "*"]',
       '',
-      '1. e4! {Claims central space.} e5 (1... c5 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
+      '1. e4! {Claims central space.} e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
     ].join('\n');
     const importResponse = await fetch(`${baseUrl}/api/import/pgn`, {
       method: 'POST',
@@ -187,8 +187,10 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(imported.pgnAnnotations.length, 3);
     assert.ok(imported.pgnAnnotations.some((annotation) => annotation.value === 'Claims central space.'));
     assert.ok(imported.pgnAnnotations.some((annotation) => annotation.annotationType === 'nag' && annotation.value === '$1'));
-    assert.equal(imported.pgnVariations.length, 1);
+    assert.equal(imported.pgnVariations.length, 2);
     assert.equal(imported.pgnVariations[0].sanLine, 'c5 Nf3');
+    assert.equal(imported.pgnVariations[1].parentVariationIndex, 0);
+    assert.equal(imported.pgnVariations[1].sanLine, 'e6');
     assert.match(imported.pgn, /1\. e4 e5 2\. Nf3 Nc6 3\. Bb5 a6/);
 
     const sessionsResponse = await fetch(`${baseUrl}/api/sessions?limit=1`);

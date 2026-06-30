@@ -83,6 +83,7 @@ function serializeState(state) {
       id: variation.id,
       parentPly: variation.parent_ply,
       parentFen: variation.parent_fen,
+      parentVariationIndex: variation.parent_variation_index,
       variationIndex: variation.variation_index,
       depth: variation.depth,
       sanLine: variation.san_line,

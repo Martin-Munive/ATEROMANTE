@@ -874,6 +874,16 @@ button {
   background: #23261f;
 }
 
+.variation[data-depth="2"] {
+  margin-left: 18px;
+  grid-template-columns: 70px 1fr;
+}
+
+.variation[data-depth="3"] {
+  margin-left: 34px;
+  grid-template-columns: 76px 1fr;
+}
+
 .variation strong {
   color: var(--green);
 }

@@ -199,10 +199,131 @@ function normalizeVariationText(input) {
 }
 
 function variationSanLine(input) {
-  return normalizeVariationText(input)
+  return normalizeVariationText(removeVariations(input))
     .split(/\s+/)
     .filter((token) => token && !/^\d+\.(\.\.)?$/.test(token))
+    .map(normalizePgnToken)
+    .filter(Boolean)
     .join(' ');
+}
+
+function collectVariationBody(source, startIndex) {
+  let depth = 1;
+  let raw = '';
+  let index = startIndex;
+  for (; index < source.length && depth > 0; index += 1) {
+    const inner = source[index];
+    if (inner === '(') {
+      depth += 1;
+    } else if (inner === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        break;
+      }
+    }
+    raw += inner;
+  }
+  return { raw, endIndex: index };
+}
+
+function parseNestedPgnVariations({
+  source,
+  parentFen,
+  parentPly,
+  parentVariationIndex,
+  depth,
+  variations,
+}) {
+  const chess = new Chess(parentFen);
+  let token = '';
+  let currentFen = parentFen;
+  let currentPly = parentPly;
+  let previousFen = currentFen;
+  let previousPly = currentPly;
+  let inComment = false;
+  let inSemicolonComment = false;
+
+  function applyBranchToken() {
+    const rawToken = token.trim();
+    token = '';
+    if (!rawToken || /^\d+\.(\.\.)?$/.test(rawToken)) {
+      return;
+    }
+    const san = normalizePgnToken(rawToken);
+    if (!san) {
+      return;
+    }
+    try {
+      previousFen = currentFen;
+      previousPly = currentPly;
+      const move = chess.move(san);
+      if (move) {
+        currentFen = chess.fen();
+        currentPly += 1;
+      }
+    } catch {
+      // Nested branch preservation is best-effort after the root PGN is accepted.
+    }
+  }
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (inSemicolonComment) {
+      if (character === '\n' || character === '\r') {
+        inSemicolonComment = false;
+      }
+      continue;
+    }
+    if (inComment) {
+      if (character === '}') {
+        inComment = false;
+      }
+      continue;
+    }
+    if (character === ';') {
+      applyBranchToken();
+      inSemicolonComment = true;
+      continue;
+    }
+    if (character === '{') {
+      applyBranchToken();
+      inComment = true;
+      continue;
+    }
+    if (character === '(') {
+      applyBranchToken();
+      const collected = collectVariationBody(source, index + 1);
+      index = collected.endIndex;
+      const rawPgn = normalizeVariationText(collected.raw);
+      if (rawPgn) {
+        const variationIndex = variations.length;
+        variations.push({
+          parentFen: previousFen,
+          parentPly: previousPly,
+          parentVariationIndex,
+          variationIndex,
+          depth,
+          sanLine: variationSanLine(rawPgn),
+          rawPgn,
+        });
+        parseNestedPgnVariations({
+          source: collected.raw,
+          parentFen: previousFen,
+          parentPly: previousPly,
+          parentVariationIndex: variationIndex,
+          depth: depth + 1,
+          variations,
+        });
+      }
+      continue;
+    }
+    if (/\s/.test(character)) {
+      applyBranchToken();
+      continue;
+    }
+    token += character;
+  }
+  applyBranchToken();
 }
 
 function parsePgnVariations(pgn) {
@@ -267,30 +388,28 @@ function parsePgnVariations(pgn) {
     }
     if (character === '(') {
       applyMainToken();
-      let depth = 1;
-      let raw = '';
-      index += 1;
-      for (; index < source.length && depth > 0; index += 1) {
-        const inner = source[index];
-        if (inner === '(') {
-          depth += 1;
-        } else if (inner === ')') {
-          depth -= 1;
-          if (depth === 0) {
-            break;
-          }
-        }
-        raw += inner;
-      }
+      const collected = collectVariationBody(source, index + 1);
+      index = collected.endIndex;
+      const raw = collected.raw;
       const rawPgn = normalizeVariationText(raw);
       if (rawPgn) {
+        const variationIndex = variations.length;
         variations.push({
           parentFen: previousFen,
           parentPly: previousPly,
-          variationIndex: variations.length,
+          parentVariationIndex: null,
+          variationIndex,
           depth: 1,
           sanLine: variationSanLine(rawPgn),
           rawPgn,
+        });
+        parseNestedPgnVariations({
+          source: raw,
+          parentFen: previousFen,
+          parentPly: previousPly,
+          parentVariationIndex: variationIndex,
+          depth: 2,
+          variations,
         });
       }
       continue;
