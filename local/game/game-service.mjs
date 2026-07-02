@@ -222,6 +222,10 @@ function sanMovesToPgn(sanMoves) {
   return turns.join(' ');
 }
 
+function pgnFromSanMoves({ headers = {}, sanMoves, result = '*' }) {
+  return `${formatPgnHeaders({ ...headers, Result: result }, result)}\n\n${sanMovesToPgn(sanMoves)} ${result}`;
+}
+
 function formatPgnHeaders(headers, result) {
   const normalizedHeaders = {
     Event: headers.Event ?? 'ATEROMANTE Study',
@@ -764,6 +768,42 @@ export class GameService {
       pgn: sanMovesToPgn(sanMoves),
       mode: 'variation-study',
       source: 'pgn-variation',
+      externalId: `${gameId}:${selectedIndex}`,
+      sourceMetadata: {
+        sourceType: 'text',
+      },
+    });
+  }
+
+  promoteVariationToMainLine({ gameId, variationIndex }) {
+    const timeline = this.games.getGameTimeline(gameId);
+    if (!timeline.game) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+    const selectedIndex = Number.parseInt(String(variationIndex), 10);
+    if (!Number.isInteger(selectedIndex) || selectedIndex < 0) {
+      throw new InvalidPgnError('PGN variation index is invalid');
+    }
+
+    const sanMoves = buildVariationMainLine({
+      mainMoves: timeline.moves.map((move) => move.san),
+      variations: timeline.pgnVariations,
+      variationIndex: selectedIndex,
+    });
+    const originalHeaders = timeline.pgnHeaders?.headers ?? {};
+    const eventName = originalHeaders.Event ?? 'ATEROMANTE Study';
+
+    return this.importPgn({
+      pgn: pgnFromSanMoves({
+        headers: {
+          ...originalHeaders,
+          Event: `${eventName} - promoted variation ${selectedIndex}`,
+        },
+        sanMoves,
+        result: '*',
+      }),
+      mode: 'mainline-replacement',
+      source: 'pgn-variation-mainline',
       externalId: `${gameId}:${selectedIndex}`,
       sourceMetadata: {
         sourceType: 'text',

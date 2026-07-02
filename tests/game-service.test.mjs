@@ -214,6 +214,36 @@ test('GameService creates a new study from a PGN variation', () => {
   closeDatabase(db);
 });
 
+test('GameService promotes a PGN variation to a new main line without mutating the source game', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: [
+      '[Event "Training Match"]',
+      '[White "Alice"]',
+      '[Black "Bob"]',
+      '',
+      '1. e4 e5 (1... c5 2. Nf3) 2. Nf3 Nc6',
+    ].join('\n'),
+  });
+  const promoted = service.promoteVariationToMainLine({
+    gameId: imported.game.id,
+    variationIndex: 0,
+  });
+
+  const promotedTimeline = service.getGameState(promoted.game.id);
+  const originalTimeline = service.getGameState(imported.game.id);
+
+  assert.equal(promotedTimeline.game.source, 'pgn-variation-mainline');
+  assert.equal(promotedTimeline.game.external_id, `${imported.game.id}:0`);
+  assert.equal(promotedTimeline.pgnHeaders.headers.Event, 'Training Match - promoted variation 0');
+  assert.deepEqual(promotedTimeline.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
+  assert.deepEqual(originalTimeline.moves.map((move) => move.san), ['e4', 'e5', 'Nf3', 'Nc6']);
+
+  closeDatabase(db);
+});
+
 test('GameService exports PGN with headers, annotations and variations', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

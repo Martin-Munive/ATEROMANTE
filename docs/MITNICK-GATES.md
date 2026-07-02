@@ -63,8 +63,10 @@ Evidence:
 - Browser-read `.pgn` imports store sanitized source metadata in `pgn_sources`; local filesystem paths are stripped and not persisted.
 - Variation playback reconstructs temporary board states in the browser from the persisted branch anchor without mutating the saved main line.
 - Opening a variation as study creates a new `variation-study` session instead of rewriting the imported source game.
+- Promoting a variation to the main line creates a new `mainline-replacement` session instead of rewriting the imported source game.
 - Enriched PGN export is rebuilt from persisted normalized data and does not expose local file paths.
 - Browser interaction QA validates the UI export button by downloading PGN and checking headers, comments, NAGs and variations.
+- Browser interaction QA validates branch promotion from the UI and confirms the promoted line is loaded as a separate study.
 
 Criteria:
 - no private material in public project;
@@ -91,8 +93,8 @@ Status: PASS_WITH_RISK for the current technical spike.
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
 - `docs/ARCHITECTURE-DRAFT.md`, `docs/ENVIRONMENT.md`, `docs/DATA-TRACEABILITY.md` and `docs/SPIKE-PLAN.md` explain the current technical shape.
-- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import with files/headers/comments/NAGs/variations/source metadata/playback, engine analysis limits and verification.
-- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import/export flow, PGN source/header/comment/NAG/variation persistence/playback, services, tests and extension points.
+- `docs/USER-GUIDE.md` covers first run, current board flow, session recovery, FEN import, basic PGN import with files/headers/comments/NAGs/variations/source metadata/playback/promotion, engine analysis limits and verification.
+- `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import/export flow, PGN source/header/comment/NAG/variation persistence/playback/promotion, services, tests and extension points.
 - `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
 - `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
 

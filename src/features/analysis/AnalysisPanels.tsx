@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GitBranchPlus, Play, X } from 'lucide-react';
 import type { useChessGame } from '../../hooks/useChessGame';
 
 interface MoveListProps {
@@ -146,6 +146,16 @@ export function VariationTree({ game }: VariationTreeProps) {
               type="button"
             >
               <Play size={16} />
+            </button>
+            <button
+              aria-label="Promover variante a línea principal"
+              disabled={preview.totalPlies === 0}
+              onClick={() => {
+                void game.promoteVariationAsMainLine();
+              }}
+              type="button"
+            >
+              <GitBranchPlus size={16} />
             </button>
             <button
               aria-label="Retroceder variante"

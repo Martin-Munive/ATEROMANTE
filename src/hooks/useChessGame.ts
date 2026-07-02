@@ -514,6 +514,33 @@ export function useChessGame() {
     }
   }
 
+  async function promoteVariationAsMainLine() {
+    if (!state || !activeVariation) {
+      return null;
+    }
+    setLoading(true);
+    setSelectedSquare(null);
+    setLastError(null);
+    setAnalysis(null);
+    setAnalysisError(null);
+    try {
+      const promoted = await postJson<ApiGameState>(
+        `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/mainline`,
+        {},
+      );
+      setState(promoted);
+      setActiveVariationId(null);
+      setActiveVariationPly(0);
+      await refreshRecentSessions();
+      return promoted;
+    } catch (error) {
+      setLastError(error instanceof Error ? error.message : 'No se pudo promover la variante a línea principal.');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function analyzePosition(depth = 12) {
     if (!state || analysisLoading) {
       return null;
@@ -605,6 +632,7 @@ export function useChessGame() {
     closeVariation,
     stepVariation,
     openVariationAsStudy,
+    promoteVariationAsMainLine,
     exportPgn,
   };
 }

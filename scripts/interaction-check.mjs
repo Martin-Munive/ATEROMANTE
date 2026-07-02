@@ -161,8 +161,9 @@ async function main() {
     await page.getByRole('button', { name: 'Avanzar variante' }).click();
     await page.getByText('1/2', { exact: true }).first().waitFor();
     await page.getByText('c5', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Abrir variante como estudio' }).click();
+    await page.getByRole('button', { name: 'Promover variante a línea principal' }).click();
     await page.getByRole('main').getByText('3 jugadas', { exact: true }).waitFor();
+    await page.getByText('Training Match - promoted variation 0', { exact: true }).waitFor();
     await page.getByText('2. Nf3', { exact: false }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-pgn-import.png'), fullPage: true });
 

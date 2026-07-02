@@ -247,6 +247,17 @@ export function createAteromanteApiServer({
         return;
       }
 
+      const variationMainLineMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/variations\/(\d+)\/mainline$/);
+      if (request.method === 'POST' && variationMainLineMatch) {
+        const promoted = service.promoteVariationToMainLine({
+          gameId: variationMainLineMatch[1],
+          variationIndex: variationMainLineMatch[2],
+        });
+        const state = service.getGameState(promoted.game.id);
+        sendJson(response, 201, serializeState(state));
+        return;
+      }
+
       const exportPgnMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/export\/pgn$/);
       if (request.method === 'GET' && exportPgnMatch) {
         sendText(response, 200, service.exportPgn(exportPgnMatch[1]), 'application/x-chess-pgn; charset=utf-8');

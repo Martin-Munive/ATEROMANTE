@@ -208,6 +208,17 @@ test('local API imports a basic PGN as a study session', async () => {
     const variationStudy = await readJson(variationStudyResponse);
     assert.deepEqual(variationStudy.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
 
+    const mainLineResponse = await fetch(`${baseUrl}/api/games/${imported.gameId}/variations/0/mainline`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(mainLineResponse.status, 201);
+    const mainLine = await readJson(mainLineResponse);
+    assert.notEqual(mainLine.gameId, imported.gameId);
+    assert.deepEqual(mainLine.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
+    assert.equal(mainLine.pgnHeaders.Event, 'Training Match - promoted variation 0');
+
     const exportResponse = await fetch(`${baseUrl}/api/games/${imported.gameId}/export/pgn`);
     assert.equal(exportResponse.status, 200);
     assert.match(exportResponse.headers.get('content-type') ?? '', /application\/x-chess-pgn/);
