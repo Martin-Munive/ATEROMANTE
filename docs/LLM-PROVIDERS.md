@@ -35,15 +35,26 @@ The provider returns:
 ## Provider Families
 
 - `mock`: implemented local placeholder for development, tests and offline QA.
+- `local-http`: implemented local model server integration through HTTP.
 - `openai-compatible`: remote chat/completion APIs with OpenAI-style endpoints.
 - `anthropic-compatible`: remote message APIs with Anthropic-style endpoints.
-- `local-http`: local model server exposed through HTTP.
 
 The default active provider is:
 
 ```text
 ATEROMANTE_LLM_PROVIDER=mock-local
 ```
+
+For a local HTTP model server:
+
+```text
+ATEROMANTE_LLM_PROVIDER=local-http-default
+ATEROMANTE_LOCAL_LLM_URL=http://127.0.0.1:11434/api/generate
+ATEROMANTE_LOCAL_LLM_MODEL=your-local-model
+ATEROMANTE_LOCAL_LLM_TIMEOUT_MS=15000
+```
+
+The local provider sends prepared context and asks for strict JSON. It also accepts plain text responses and normalizes them into the tutor response contract.
 
 ## Secrets
 API keys must stay outside Git.

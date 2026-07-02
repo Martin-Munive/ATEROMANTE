@@ -153,12 +153,13 @@ function serializeEvaluation(row, perspective = 'side-to-move') {
 export function createAteromanteApiServer({
   dbPath = DEFAULT_DB_PATH,
   engineService = new UciEngineService(),
+  tutorService: injectedTutorService = null,
 } = {}) {
   const db = openAteromanteDatabase(dbPath);
   const service = new GameService({ db });
   const engineEvaluations = new EngineEvaluationRepository(db, service.eventLog);
   const tutorEvents = new TutorEventRepository(db, service.eventLog);
-  const tutorService = new TutorService({ eventRepository: tutorEvents });
+  const tutorService = injectedTutorService ?? new TutorService({ eventRepository: tutorEvents });
 
   const server = createServer(async (request, response) => {
     try {

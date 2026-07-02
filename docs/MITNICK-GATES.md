@@ -69,6 +69,7 @@ Evidence:
 - Browser interaction QA validates branch promotion from the UI and confirms the promoted line is loaded as a separate study.
 - Tutor provider execution is behind the local API; browser QA validates the `mock-local` tutor explanation flow.
 - Tutor explanations are persisted in `tutor_events` and traced through `event_log`.
+- `local-http-default` provider is implemented behind `TutorService` and covered with a local fake HTTP server test.
 
 Criteria:
 - no private material in public project;

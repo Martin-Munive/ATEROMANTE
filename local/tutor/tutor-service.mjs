@@ -5,6 +5,8 @@ export class TutorProviderUnavailableError extends Error {
   }
 }
 
+const DEFAULT_LOCAL_HTTP_URL = 'http://127.0.0.1:11434/api/generate';
+
 export const tutorProviderConfigs = [
   {
     id: 'mock-local',
@@ -29,9 +31,9 @@ export const tutorProviderConfigs = [
     label: 'Local HTTP model',
     kind: 'local-http',
     model: process.env.ATEROMANTE_LOCAL_LLM_MODEL || 'configured-by-user',
-    enabled: Boolean(process.env.ATEROMANTE_LOCAL_LLM_URL),
-    baseUrl: process.env.ATEROMANTE_LOCAL_LLM_URL || 'http://127.0.0.1:11434',
-    supportsStreaming: true,
+    enabled: Boolean(process.env.ATEROMANTE_LOCAL_LLM_URL || process.env.ATEROMANTE_LOCAL_LLM_MODEL),
+    baseUrl: process.env.ATEROMANTE_LOCAL_LLM_URL || DEFAULT_LOCAL_HTTP_URL,
+    supportsStreaming: false,
   },
 ];
 
@@ -39,6 +41,101 @@ const tutorDepths = new Set(['hint', 'tactical', 'strategic', 'full-lesson']);
 
 function normalizeTutorDepth(value) {
   return tutorDepths.has(value) ? value : 'hint';
+}
+
+function boundedString(value, fallback = '', maxLength = 2000) {
+  return typeof value === 'string' && value.trim()
+    ? value.trim().slice(0, maxLength)
+    : fallback;
+}
+
+function boundedStringArray(value, fallback = []) {
+  return Array.isArray(value)
+    ? value.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim()).slice(0, 6)
+    : fallback;
+}
+
+function normalizeAnnotations(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      kind: ['arrow', 'square', 'line', 'opacity'].includes(item.kind) ? item.kind : 'square',
+      from: typeof item.from === 'string' ? item.from.slice(0, 8) : undefined,
+      to: typeof item.to === 'string' ? item.to.slice(0, 8) : undefined,
+      square: typeof item.square === 'string' ? item.square.slice(0, 8) : undefined,
+      color: ['green', 'amber', 'red', 'blue', 'violet'].includes(item.color) ? item.color : 'blue',
+      label: typeof item.label === 'string' ? item.label.slice(0, 80) : undefined,
+    }))
+    .slice(0, 8);
+}
+
+function parseProviderContent(payload) {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+  if (typeof payload?.summary === 'string') {
+    return payload;
+  }
+  if (typeof payload?.response === 'string') {
+    return payload.response;
+  }
+  if (typeof payload?.message?.content === 'string') {
+    return payload.message.content;
+  }
+  if (typeof payload?.choices?.[0]?.message?.content === 'string') {
+    return payload.choices[0].message.content;
+  }
+  return '';
+}
+
+function normalizeTutorResponse(payload) {
+  const content = parseProviderContent(payload);
+  let parsed = typeof content === 'string' ? null : content;
+  if (typeof content === 'string') {
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = null;
+    }
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    return {
+      summary: boundedString(parsed.summary, 'El tutor local devolvio una respuesta sin resumen.'),
+      candidateMove: typeof parsed.candidateMove === 'string' ? parsed.candidateMove.slice(0, 20) : undefined,
+      teachingFocus: boundedStringArray(parsed.teachingFocus, ['revision local']),
+      visualAnnotations: normalizeAnnotations(parsed.visualAnnotations),
+      followUpExercise: typeof parsed.followUpExercise === 'string' ? parsed.followUpExercise.slice(0, 500) : undefined,
+      confidence: ['low', 'medium', 'high'].includes(parsed.confidence) ? parsed.confidence : 'low',
+    };
+  }
+
+  return {
+    summary: boundedString(content, 'El tutor local no devolvio contenido.'),
+    candidateMove: undefined,
+    teachingFocus: ['revision local'],
+    visualAnnotations: [],
+    followUpExercise: undefined,
+    confidence: 'low',
+  };
+}
+
+function buildLocalHttpPrompt(context) {
+  return [
+    'Eres el tutor educativo de ATEROMANTE. No valides reglas de ajedrez ni inventes legalidad; usa solo el contexto preparado.',
+    'Responde en JSON estricto con: summary, candidateMove, teachingFocus, visualAnnotations, followUpExercise, confidence.',
+    `Idioma: ${context.language}`,
+    `Modo tutor: ${context.tutorDepth}`,
+    `FEN: ${context.fen}`,
+    `PGN: ${context.pgn || '(sin PGN)'}`,
+    `Ultima jugada: ${context.lastMove || '(sin jugada)'}`,
+    `Lineas de motor: ${JSON.stringify(context.engineLines)}`,
+    `Perfil: ${context.studentProfileSummary}`,
+    `Politica: ${JSON.stringify(context.matchPolicy)}`,
+  ].join('\n');
 }
 
 class MockTutorProvider {
@@ -69,10 +166,65 @@ class MockTutorProvider {
   }
 }
 
+export class LocalHttpTutorProvider {
+  constructor({
+    config = tutorProviderConfigs.find((provider) => provider.id === 'local-http-default'),
+    fetchImpl = globalThis.fetch,
+    timeoutMs = Number.parseInt(process.env.ATEROMANTE_LOCAL_LLM_TIMEOUT_MS ?? '15000', 10),
+  } = {}) {
+    this.config = config;
+    this.fetchImpl = fetchImpl;
+    this.timeoutMs = Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 120000 ? timeoutMs : 15000;
+  }
+
+  async explainPosition(context) {
+    const model = process.env.ATEROMANTE_LOCAL_LLM_MODEL || this.config.model;
+    if (!this.fetchImpl) {
+      throw new TutorProviderUnavailableError('fetch is not available for local HTTP tutor provider');
+    }
+    if (!model || model === 'configured-by-user') {
+      throw new TutorProviderUnavailableError('ATEROMANTE_LOCAL_LLM_MODEL is required for local-http-default');
+    }
+
+    let response;
+    try {
+      response = await this.fetchImpl(this.config.baseUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          prompt: buildLocalHttpPrompt(context),
+          stream: false,
+          context,
+        }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (error) {
+      throw new TutorProviderUnavailableError(`Local HTTP tutor request failed: ${error.message}`);
+    }
+
+    if (!response.ok) {
+      throw new TutorProviderUnavailableError(`Local HTTP tutor returned HTTP ${response.status}`);
+    }
+
+    const rawPayload = await response.text();
+    let payload;
+    try {
+      payload = JSON.parse(rawPayload);
+    } catch {
+      payload = rawPayload;
+    }
+    return normalizeTutorResponse(payload);
+  }
+}
+
 export class TutorService {
   constructor({
     providerId = process.env.ATEROMANTE_LLM_PROVIDER || 'mock-local',
-    providers = new Map([['mock-local', new MockTutorProvider()]]),
+    providers = new Map([
+      ['mock-local', new MockTutorProvider()],
+      ['local-http-default', new LocalHttpTutorProvider()],
+    ]),
     eventRepository,
   } = {}) {
     this.providerId = providerId;

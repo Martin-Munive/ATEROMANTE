@@ -105,7 +105,7 @@ See [Engine Setup](ENGINE-SETUP.md).
 If no engine is configured, the UI shows an engine-unavailable message. That is expected during the spike.
 
 ## Tutor Panel
-The tutor panel can request an explanation for the current position from the local API. The default provider is `mock-local`, a deterministic local tutor used to validate the contract before remote or local HTTP models are connected.
+The tutor panel can request an explanation for the current position from the local API. The default provider is `mock-local`, a deterministic local tutor used to validate the contract. A local HTTP provider is also available for local model servers.
 
 The tutor must not validate chess legality. Legal moves, FEN and PGN come from `chess.js` through the local game service.
 
@@ -115,6 +115,14 @@ Provider selection is controlled by environment variables. The current implement
 
 ```text
 ATEROMANTE_LLM_PROVIDER=mock-local
+```
+
+To use a local HTTP model server, configure:
+
+```text
+ATEROMANTE_LLM_PROVIDER=local-http-default
+ATEROMANTE_LOCAL_LLM_URL=http://127.0.0.1:11434/api/generate
+ATEROMANTE_LOCAL_LLM_MODEL=your-local-model
 ```
 
 ## Local Data
@@ -152,6 +160,6 @@ npm run qa:interaction
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
 - PGN import/export currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback, opening a branch as a new study and promoting a branch into a separate main-line study.
-- Remote/local HTTP LLM providers are documented but not connected yet; the active tutor provider is `mock-local`.
+- Remote OpenAI-compatible providers are documented but not connected yet; `mock-local` and `local-http-default` are implemented.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.
