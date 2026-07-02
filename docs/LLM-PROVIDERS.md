@@ -4,11 +4,13 @@
 ATEROMANTE should let users connect the tutor to different model providers without changing the training, board or persistence code.
 
 ## Current Contract
-The public contract lives in:
+The API-side contract lives in:
 
-- `src/domain/llmTypes.ts`
-- `src/services/llm/providerRegistry.ts`
-- `src/services/llm/mockTutorProvider.ts`
+- `local/tutor/tutor-service.mjs`
+- `local/api/server.mjs`
+- `local/persistence/repositories.mjs`
+
+Earlier browser-side type files remain useful as design references, but provider execution belongs behind the local API so secrets and remote calls do not enter the browser bundle.
 
 The tutor provider receives:
 
@@ -32,10 +34,16 @@ The provider returns:
 
 ## Provider Families
 
-- `mock`: local placeholder for development and tests.
+- `mock`: implemented local placeholder for development, tests and offline QA.
 - `openai-compatible`: remote chat/completion APIs with OpenAI-style endpoints.
 - `anthropic-compatible`: remote message APIs with Anthropic-style endpoints.
 - `local-http`: local model server exposed through HTTP.
+
+The default active provider is:
+
+```text
+ATEROMANTE_LLM_PROVIDER=mock-local
+```
 
 ## Secrets
 API keys must stay outside Git.

@@ -577,6 +577,82 @@ export class EngineEvaluationRepository {
   }
 }
 
+export class TutorEventRepository {
+  constructor(db, eventLog = new EventLogRepository(db)) {
+    this.db = db;
+    this.eventLog = eventLog;
+  }
+
+  recordTutorEvent({
+    sessionId,
+    gameId,
+    moveId = null,
+    positionId = null,
+    llmProviderId,
+    tutorMode,
+    visibility = 'private',
+    summary,
+    teachingFocus = [],
+    annotations = [],
+    confidence = 'low',
+  }) {
+    const tutorEventId = id('tut');
+    const timestamp = nowIso();
+
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare(`
+        INSERT INTO tutor_events (
+          id, session_id, game_id, move_id, position_id, llm_provider_id, tutor_mode,
+          visibility, summary, teaching_focus_json, annotations_json, confidence, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        tutorEventId,
+        sessionId,
+        gameId,
+        moveId,
+        positionId,
+        llmProviderId,
+        tutorMode,
+        visibility,
+        summary,
+        json(teachingFocus),
+        json(annotations),
+        confidence,
+        timestamp,
+      );
+
+      this.eventLog.appendEvent({
+        eventType: 'tutor.explanation.created',
+        sessionId,
+        gameId,
+        moveId,
+        positionId,
+        payload: { tutorEventId, llmProviderId, tutorMode, visibility, confidence },
+        occurredAt: timestamp,
+      });
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+
+    return this.getTutorEvent(tutorEventId);
+  }
+
+  getTutorEvent(tutorEventId) {
+    const row = this.db.prepare('SELECT * FROM tutor_events WHERE id = ?').get(tutorEventId);
+    if (!row) {
+      return null;
+    }
+    return {
+      ...row,
+      teaching_focus: JSON.parse(row.teaching_focus_json),
+      annotations: JSON.parse(row.annotations_json),
+    };
+  }
+}
+
 export class LearningRepository {
   constructor(db, eventLog = new EventLogRepository(db)) {
     this.db = db;

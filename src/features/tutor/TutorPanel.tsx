@@ -28,8 +28,31 @@ export function TutorPanel({ game }: TutorPanelProps) {
       <ul>
         <li>FEN actual disponible para motor, tutor y persistencia.</li>
         <li>PGN real generado por reglas determinísticas.</li>
-        <li>El LLM todavía no valida reglas: solo explicará contexto preparado.</li>
+        <li>El tutor explica contexto preparado; no valida reglas ni genera jugadas legales.</li>
       </ul>
+      <div className="lesson-block">
+        <h3>Explicación del tutor</h3>
+        {game.tutorLoading && <p><strong>Preparando explicación…</strong></p>}
+        {!game.tutorLoading && game.tutorError && <p><strong>{game.tutorError}</strong></p>}
+        {!game.tutorLoading && game.tutorExplanation && (
+          <>
+            <p>{game.tutorExplanation.summary}</p>
+            <ul className="annotation-list">
+              <li><strong>Proveedor</strong>{game.tutorExplanation.provider.label}</li>
+              <li><strong>Confianza</strong>{game.tutorExplanation.confidence}</li>
+              {game.tutorExplanation.candidateMove && (
+                <li><strong>Candidata</strong>{game.tutorExplanation.candidateMove}</li>
+              )}
+              {game.tutorExplanation.teachingFocus.slice(0, 3).map((focus) => (
+                <li key={focus}><strong>Foco</strong>{focus}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        {!game.tutorLoading && !game.tutorExplanation && !game.tutorError && (
+          <p>Solicita una explicación cuando quieras revisar la posición actual.</p>
+        )}
+      </div>
       <div className="lesson-block">
         <h3>FEN</h3>
         <p>
@@ -54,7 +77,15 @@ export function TutorPanel({ game }: TutorPanelProps) {
         <p>{game.pgn || 'La partida aun no tiene movimientos.'}</p>
       </div>
       <div className="tutor-actions">
-        <button><ChevronLeft size={16} />Anterior</button>
+        <button
+          disabled={game.tutorLoading}
+          onClick={() => {
+            void game.explainWithTutor('hint');
+          }}
+          type="button"
+        >
+          <ChevronLeft size={16} />Explicar
+        </button>
         <span>{game.history.length} jugadas</span>
         <button onClick={game.resetGame} type="button">Reiniciar <ChevronRight size={16} /></button>
       </div>

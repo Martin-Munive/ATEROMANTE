@@ -32,6 +32,7 @@ local/
   engine/
   game/
   persistence/
+  tutor/
 
 tests/
   *.test.mjs
@@ -74,6 +75,8 @@ POST /api/games/:gameId/variations/:variationIndex/mainline
 POST /api/games/:gameId/moves
 POST /api/games/:gameId/analysis
 GET  /api/engine/status
+GET  /api/tutor/providers
+POST /api/games/:gameId/tutor/explain
 ```
 
 `recover-or-create` is intentionally idempotent for startup. It prevents duplicate initial sessions in React StrictMode.
@@ -107,6 +110,19 @@ Responsibilities:
 
 The executable path comes from server configuration, never from HTTP input.
 
+### Tutor Service
+`local/tutor/tutor-service.mjs` owns the API-side tutor provider contract.
+
+Current responsibilities:
+
+- list provider configurations without exposing API keys;
+- build tutor context from deterministic game state;
+- optionally include the latest stored engine evaluation;
+- call the active provider;
+- persist each explanation in `tutor_events` and `event_log`.
+
+The current implemented provider is `mock-local`. Remote providers are intentionally listed as configuration targets but not implemented in this cut.
+
 ### Persistence
 `local/persistence/schema.sql` defines the current SQLite schema.
 
@@ -121,6 +137,7 @@ Important tables:
 - `moves`
 - `event_log`
 - `engine_evaluations`
+- `tutor_events`
 - `learning_events`
 - `tags`
 - `review_items`
@@ -148,6 +165,14 @@ Important tables:
 4. `UciEngineService` sends the FEN to the external engine.
 5. API stores the result in `engine_evaluations` and `event_log`.
 6. React renders score, best move, principal variation and arrow.
+
+### Tutor Explanation
+1. User clicks `Explicar`.
+2. React posts to `POST /api/games/:gameId/tutor/explain`.
+3. API reconstructs deterministic game state and reads the latest stored engine evaluation when available.
+4. `TutorService` calls the configured provider, currently `mock-local`.
+5. API persists the explanation in `tutor_events` and logs `tutor.explanation.created`.
+6. React renders summary, provider, confidence, candidate move and teaching focus.
 
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.
@@ -216,6 +241,14 @@ The tutor receives prepared deterministic context:
 
 It returns educational feedback and optional annotations. It does not control game legality.
 
+Implemented baseline:
+
+- `GET /api/tutor/providers`;
+- `POST /api/games/:gameId/tutor/explain`;
+- `TutorEventRepository`;
+- API-side `mock-local` provider;
+- browser panel action and rendering.
+
 ### Human Training Sessions
 Do not add networking before the local event model is solid.
 
@@ -243,7 +276,7 @@ Current coverage includes:
 - persistence migration and repositories;
 - learning-event traceability;
 - UCI handshake, validation, depth bounds and missing engine errors;
-- browser interaction for `e2-e4`, FEN import, PGN import, PGN export and PGN branch promotion.
+- browser interaction for `e2-e4`, tutor explanation, FEN import, PGN import, PGN export and PGN branch promotion.
 
 ## Visual QA
 Run:

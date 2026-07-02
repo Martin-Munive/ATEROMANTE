@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
-import { EngineEvaluationRepository } from '../persistence/repositories.mjs';
+import { EngineEvaluationRepository, TutorEventRepository } from '../persistence/repositories.mjs';
 import { GameService, IllegalMoveError, InvalidFenError, InvalidPgnError } from '../game/game-service.mjs';
 import {
   UciEngineInputError,
@@ -10,6 +10,7 @@ import {
   UciEngineService,
   UciEngineUnavailableError,
 } from '../engine/uci-engine-service.mjs';
+import { TutorProviderUnavailableError, TutorService } from '../tutor/tutor-service.mjs';
 
 const DEFAULT_PORT = Number.parseInt(process.env.ATEROMANTE_API_PORT ?? '4174', 10);
 const DEFAULT_DB_PATH = process.env.ATEROMANTE_DB_PATH
@@ -156,6 +157,8 @@ export function createAteromanteApiServer({
   const db = openAteromanteDatabase(dbPath);
   const service = new GameService({ db });
   const engineEvaluations = new EngineEvaluationRepository(db, service.eventLog);
+  const tutorEvents = new TutorEventRepository(db, service.eventLog);
+  const tutorService = new TutorService({ eventRepository: tutorEvents });
 
   const server = createServer(async (request, response) => {
     try {
@@ -182,6 +185,11 @@ export function createAteromanteApiServer({
               timeoutMs: null,
             };
         sendJson(response, 200, status);
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/tutor/providers') {
+        sendJson(response, 200, { providers: tutorService.listProviders() });
         return;
       }
 
@@ -321,6 +329,28 @@ export function createAteromanteApiServer({
         return;
       }
 
+      const tutorMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/tutor\/explain$/);
+      if (request.method === 'POST' && tutorMatch) {
+        const gameId = tutorMatch[1];
+        const current = service.getGameState(gameId);
+        if (!current) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+
+        const input = await readJson(request);
+        const latestEvaluation = engineEvaluations.listByGame(gameId)[0] ?? null;
+        const explanation = await tutorService.explain({
+          state: current,
+          engineEvaluation: latestEvaluation,
+          tutorDepth: input.tutorDepth,
+          language: input.language,
+        });
+
+        sendJson(response, 201, explanation);
+        return;
+      }
+
       sendJson(response, 404, { error: 'not_found' });
     } catch (error) {
       if (error instanceof IllegalMoveError) {
@@ -353,6 +383,13 @@ export function createAteromanteApiServer({
         sendJson(response, 502, {
           error: 'engine_protocol_error',
           message: 'El motor UCI no completo el analisis correctamente.',
+        });
+        return;
+      }
+      if (error instanceof TutorProviderUnavailableError) {
+        sendJson(response, 503, {
+          error: 'tutor_provider_unavailable',
+          message: 'Proveedor de tutor no disponible. Revisa ATEROMANTE_LLM_PROVIDER.',
         });
         return;
       }

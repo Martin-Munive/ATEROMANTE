@@ -12,11 +12,12 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - preserve standard PGN headers, main-line comments, main-line NAG annotations, imported PGN variations and PGN source metadata;
 - promote an imported PGN variation into a separate main-line study;
 - export the current study as enriched PGN;
+- request a first local tutor explanation through the API-backed tutor panel;
 - request engine analysis through a configured external UCI engine;
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
 
-It does not yet include PGN variation editing, real LLM tutoring, reports, online connectors or networked training rooms.
+It does not yet include in-place PGN variation editing, remote LLM tutoring, reports, online connectors or networked training rooms.
 
 ## Install And Run
 Install dependencies from the project root:
@@ -104,9 +105,17 @@ See [Engine Setup](ENGINE-SETUP.md).
 If no engine is configured, the UI shows an engine-unavailable message. That is expected during the spike.
 
 ## Tutor Panel
-The tutor panel currently explains deterministic game state and simulated training context. Real LLM provider integration is not implemented yet.
+The tutor panel can request an explanation for the current position from the local API. The default provider is `mock-local`, a deterministic local tutor used to validate the contract before remote or local HTTP models are connected.
 
 The tutor must not validate chess legality. Legal moves, FEN and PGN come from `chess.js` through the local game service.
+
+Use `Explicar` to ask for a short explanation. The API stores the tutor event so future reports and learning memory can reference it.
+
+Provider selection is controlled by environment variables. The current implemented provider is:
+
+```text
+ATEROMANTE_LLM_PROVIDER=mock-local
+```
 
 ## Local Data
 By default, runtime data is stored under:
@@ -143,6 +152,6 @@ npm run qa:interaction
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
 - PGN import/export currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback, opening a branch as a new study and promoting a branch into a separate main-line study.
-- LLM providers are not connected.
+- Remote/local HTTP LLM providers are documented but not connected yet; the active tutor provider is `mock-local`.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

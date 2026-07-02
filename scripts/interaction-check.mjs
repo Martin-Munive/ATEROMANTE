@@ -101,6 +101,14 @@ async function main() {
     await page.getByText('Negras juegan', { exact: true }).waitFor();
     await page.getByText('1. e4', { exact: false }).waitFor();
     await page.getByText('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', { exact: true }).waitFor();
+    const tutorResponsePromise = page.waitForResponse((response) => (
+      response.url().includes('/api/games/')
+      && response.url().includes('/tutor/explain')
+      && response.status() === 201
+    ));
+    await page.getByRole('button', { name: /Explicar/ }).click();
+    await tutorResponsePromise;
+    await page.getByText('pista breve', { exact: false }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-e2e4.png'), fullPage: true });
 
     const importedFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';

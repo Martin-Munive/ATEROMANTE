@@ -102,6 +102,24 @@ export interface EngineStatus {
   timeoutMs: number | null;
 }
 
+export interface TutorExplanation {
+  id: string | null;
+  provider: {
+    id: string;
+    label: string;
+    kind: string;
+    model: string;
+  };
+  tutorMode: 'hint' | 'tactical' | 'strategic' | 'full-lesson';
+  summary: string;
+  candidateMove: string | null;
+  teachingFocus: string[];
+  visualAnnotations: Array<Record<string, unknown>>;
+  followUpExercise: string | null;
+  confidence: 'low' | 'medium' | 'high';
+  createdAt: string;
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
@@ -191,6 +209,9 @@ export function useChessGame() {
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
   const [engineStatusLoading, setEngineStatusLoading] = useState(true);
+  const [tutorExplanation, setTutorExplanation] = useState<TutorExplanation | null>(null);
+  const [tutorLoading, setTutorLoading] = useState(false);
+  const [tutorError, setTutorError] = useState<string | null>(null);
   const [fenImportLoading, setFenImportLoading] = useState(false);
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
@@ -252,6 +273,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -278,6 +301,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -307,6 +332,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -336,6 +363,8 @@ export function useChessGame() {
         if (active) {
           setState(nextState);
           setLastError(null);
+          setTutorExplanation(null);
+          setTutorError(null);
         }
         if (active) {
           await refreshRecentSessions();
@@ -440,6 +469,8 @@ export function useChessGame() {
       setState(nextState);
       setAnalysis(null);
       setAnalysisError(null);
+      setTutorExplanation(null);
+      setTutorError(null);
       setSelectedSquare(null);
       setLastError(null);
       await refreshRecentSessions();
@@ -457,6 +488,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     try {
       setState(await createNewGame());
       await refreshRecentSessions();
@@ -496,6 +529,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     try {
       const imported = await postJson<ApiGameState>(
         `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/study`,
@@ -523,6 +558,8 @@ export function useChessGame() {
     setLastError(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setTutorExplanation(null);
+    setTutorError(null);
     try {
       const promoted = await postJson<ApiGameState>(
         `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/mainline`,
@@ -559,6 +596,30 @@ export function useChessGame() {
       return null;
     } finally {
       setAnalysisLoading(false);
+    }
+  }
+
+  async function explainWithTutor(tutorDepth: TutorExplanation['tutorMode'] = 'hint') {
+    if (!state || tutorLoading) {
+      return null;
+    }
+
+    setTutorLoading(true);
+    setTutorError(null);
+    try {
+      const result = await postJson<TutorExplanation>(`${apiBaseUrl}/api/games/${state.gameId}/tutor/explain`, {
+        tutorDepth,
+        language: 'es',
+      });
+      setTutorExplanation(result);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo obtener la explicación del tutor.';
+      setTutorExplanation(null);
+      setTutorError(message);
+      return null;
+    } finally {
+      setTutorLoading(false);
     }
   }
 
@@ -610,6 +671,9 @@ export function useChessGame() {
     analysis,
     analysisLoading,
     analysisError,
+    tutorExplanation,
+    tutorLoading,
+    tutorError,
     engineStatus,
     engineStatusLoading,
     fenImportLoading,
@@ -624,6 +688,7 @@ export function useChessGame() {
     handleSquare,
     resetGame,
     analyzePosition,
+    explainWithTutor,
     refreshEngineStatus,
     importFen,
     importPgn,

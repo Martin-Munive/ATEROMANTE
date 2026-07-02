@@ -270,6 +270,45 @@ test('local API reports external engine status', async () => {
   }, { engineService });
 });
 
+test('local API lists tutor providers and stores tutor explanations', async () => {
+  await withServer(async (baseUrl) => {
+    const providersResponse = await fetch(`${baseUrl}/api/tutor/providers`);
+    assert.equal(providersResponse.status, 200);
+    const providers = await readJson(providersResponse);
+    assert.ok(providers.providers.some((provider) => provider.id === 'mock-local' && provider.active));
+
+    const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    const created = await readJson(createdResponse);
+
+    await fetch(`${baseUrl}/api/games/${created.gameId}/moves`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ from: 'e2', to: 'e4', promotion: 'q' }),
+    });
+
+    const tutorResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/tutor/explain`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tutorDepth: 'hint', language: 'es' }),
+    });
+    assert.equal(tutorResponse.status, 201);
+    const explanation = await readJson(tutorResponse);
+    assert.equal(explanation.provider.id, 'mock-local');
+    assert.equal(explanation.tutorMode, 'hint');
+    assert.match(explanation.summary, /pista breve/i);
+    assert.ok(explanation.teachingFocus.includes('centro'));
+    assert.ok(explanation.id);
+
+    const fetchedResponse = await fetch(`${baseUrl}/api/games/${created.gameId}`);
+    const fetched = await readJson(fetchedResponse);
+    assert.ok(fetched.events.some((event) => event.eventType === 'tutor.explanation.created'));
+  });
+});
+
 test('local API rejects illegal moves without mutating the game', async () => {
   await withServer(async (baseUrl) => {
     const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
