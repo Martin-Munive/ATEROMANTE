@@ -120,6 +120,19 @@ export interface TutorExplanation {
   createdAt: string;
 }
 
+export interface TutorProviderConfig {
+  id: string;
+  label: string;
+  kind: string;
+  model: string;
+  enabled: boolean;
+  active: boolean;
+}
+
+interface TutorProvidersResponse {
+  providers: TutorProviderConfig[];
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
@@ -212,6 +225,9 @@ export function useChessGame() {
   const [tutorExplanation, setTutorExplanation] = useState<TutorExplanation | null>(null);
   const [tutorLoading, setTutorLoading] = useState(false);
   const [tutorError, setTutorError] = useState<string | null>(null);
+  const [tutorProviders, setTutorProviders] = useState<TutorProviderConfig[]>([]);
+  const [selectedTutorProviderId, setSelectedTutorProviderId] = useState('mock-local');
+  const [selectedTutorDepth, setSelectedTutorDepth] = useState<TutorExplanation['tutorMode']>('hint');
   const [fenImportLoading, setFenImportLoading] = useState(false);
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
@@ -264,6 +280,23 @@ export function useChessGame() {
       });
     } finally {
       setEngineStatusLoading(false);
+    }
+  }
+
+  async function refreshTutorProviders() {
+    try {
+      const payload = await getJson<TutorProvidersResponse>(`${apiBaseUrl}/api/tutor/providers`);
+      setTutorProviders(payload.providers);
+      const activeProvider = payload.providers.find((provider) => provider.active && provider.enabled)
+        ?? payload.providers.find((provider) => provider.enabled);
+      if (activeProvider) {
+        setSelectedTutorProviderId(activeProvider.id);
+      }
+      return payload.providers;
+    } catch {
+      setTutorProviders([]);
+      setSelectedTutorProviderId('mock-local');
+      return [];
     }
   }
 
@@ -371,6 +404,9 @@ export function useChessGame() {
         }
         if (active) {
           await refreshEngineStatus();
+        }
+        if (active) {
+          await refreshTutorProviders();
         }
       } catch (error) {
         if (active) {
@@ -599,7 +635,13 @@ export function useChessGame() {
     }
   }
 
-  async function explainWithTutor(tutorDepth: TutorExplanation['tutorMode'] = 'hint') {
+  async function explainWithTutor({
+    tutorDepth = selectedTutorDepth,
+    providerId = selectedTutorProviderId,
+  }: {
+    tutorDepth?: TutorExplanation['tutorMode'];
+    providerId?: string;
+  } = {}) {
     if (!state || tutorLoading) {
       return null;
     }
@@ -609,6 +651,7 @@ export function useChessGame() {
     try {
       const result = await postJson<TutorExplanation>(`${apiBaseUrl}/api/games/${state.gameId}/tutor/explain`, {
         tutorDepth,
+        providerId,
         language: 'es',
       });
       setTutorExplanation(result);
@@ -674,6 +717,9 @@ export function useChessGame() {
     tutorExplanation,
     tutorLoading,
     tutorError,
+    tutorProviders,
+    selectedTutorProviderId,
+    selectedTutorDepth,
     engineStatus,
     engineStatusLoading,
     fenImportLoading,
@@ -689,6 +735,8 @@ export function useChessGame() {
     resetGame,
     analyzePosition,
     explainWithTutor,
+    setSelectedTutorProviderId,
+    setSelectedTutorDepth,
     refreshEngineStatus,
     importFen,
     importPgn,

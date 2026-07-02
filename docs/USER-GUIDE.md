@@ -111,7 +111,7 @@ The tutor must not validate chess legality. Legal moves, FEN and PGN come from `
 
 Use `Explicar` to ask for a short explanation. The API stores the tutor event so future reports and learning memory can reference it.
 
-Provider selection is controlled by environment variables. The current implemented provider is:
+The tutor panel lets you choose an enabled provider and an explanation mode before requesting the explanation. Provider availability is controlled by server environment variables. The default implemented provider is:
 
 ```text
 ATEROMANTE_LLM_PROVIDER=mock-local
@@ -154,7 +154,7 @@ npm run qa:interaction
 
 `qa:visual` writes desktop and mobile screenshots to `qa-artifacts/`.
 
-`qa:interaction` opens the app, plays `e2-e4`, imports FEN and PGN positions, checks the resulting board state and stores interaction screenshots.
+`qa:interaction` opens the app, plays `e2-e4`, requests a tutor explanation, imports FEN and PGN positions, checks the resulting board state and stores interaction screenshots.
 
 ## Current Limits
 - No Stockfish binary is included.

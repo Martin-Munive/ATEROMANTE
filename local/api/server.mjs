@@ -346,6 +346,7 @@ export function createAteromanteApiServer({
           engineEvaluation: latestEvaluation,
           tutorDepth: input.tutorDepth,
           language: input.language,
+          providerId: input.providerId,
         });
 
         sendJson(response, 201, explanation);

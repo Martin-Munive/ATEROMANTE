@@ -8,6 +8,12 @@ interface TutorPanelProps {
 export function TutorPanel({ game }: TutorPanelProps) {
   const lastMove = game.lastMove?.san ?? 'sin jugada';
   const verdict = game.lastError ?? (game.inCheck ? 'Jaque detectado: revisa la seguridad del rey.' : 'Movimiento legal registrado por el árbitro interno.');
+  const tutorDepths = [
+    { value: 'hint', label: 'Pista' },
+    { value: 'tactical', label: 'Táctica' },
+    { value: 'strategic', label: 'Plan' },
+    { value: 'full-lesson', label: 'Clase' },
+  ] as const;
 
   return (
     <section className="tutor-panel">
@@ -32,6 +38,32 @@ export function TutorPanel({ game }: TutorPanelProps) {
       </ul>
       <div className="lesson-block">
         <h3>Explicación del tutor</h3>
+        <div className="tutor-controls">
+          <label>
+            <span>Proveedor</span>
+            <select
+              onChange={(event) => game.setSelectedTutorProviderId(event.target.value)}
+              value={game.selectedTutorProviderId}
+            >
+              {game.tutorProviders.map((provider) => (
+                <option disabled={!provider.enabled} key={provider.id} value={provider.id}>
+                  {`${provider.label}${provider.enabled ? '' : ' (pendiente)'}`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Modo</span>
+            <select
+              onChange={(event) => game.setSelectedTutorDepth(event.target.value as typeof game.selectedTutorDepth)}
+              value={game.selectedTutorDepth}
+            >
+              {tutorDepths.map((depth) => (
+                <option key={depth.value} value={depth.value}>{depth.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         {game.tutorLoading && <p><strong>Preparando explicación…</strong></p>}
         {!game.tutorLoading && game.tutorError && <p><strong>{game.tutorError}</strong></p>}
         {!game.tutorLoading && game.tutorExplanation && (
@@ -80,7 +112,7 @@ export function TutorPanel({ game }: TutorPanelProps) {
         <button
           disabled={game.tutorLoading}
           onClick={() => {
-            void game.explainWithTutor('hint');
+            void game.explainWithTutor();
           }}
           type="button"
         >

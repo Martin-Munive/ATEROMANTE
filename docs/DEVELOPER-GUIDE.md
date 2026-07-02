@@ -173,6 +173,7 @@ Important tables:
 4. `TutorService` calls the configured provider, currently `mock-local`.
 5. API persists the explanation in `tutor_events` and logs `tutor.explanation.created`.
 6. React renders summary, provider, confidence, candidate move and teaching focus.
+7. The UI can send a per-request `providerId` and `tutorDepth`; provider selection remains server-validated.
 
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.
@@ -248,7 +249,7 @@ Implemented baseline:
 - `TutorEventRepository`;
 - API-side `mock-local` provider;
 - API-side `local-http-default` provider for local model servers;
-- browser panel action and rendering.
+- browser panel provider/depth selection, action and rendering.
 
 ### Human Training Sessions
 Do not add networking before the local event model is solid.

@@ -31,7 +31,7 @@ export const tutorProviderConfigs = [
     label: 'Local HTTP model',
     kind: 'local-http',
     model: process.env.ATEROMANTE_LOCAL_LLM_MODEL || 'configured-by-user',
-    enabled: Boolean(process.env.ATEROMANTE_LOCAL_LLM_URL || process.env.ATEROMANTE_LOCAL_LLM_MODEL),
+    enabled: Boolean(process.env.ATEROMANTE_LOCAL_LLM_MODEL),
     baseUrl: process.env.ATEROMANTE_LOCAL_LLM_URL || DEFAULT_LOCAL_HTTP_URL,
     supportsStreaming: false,
   },
@@ -239,10 +239,11 @@ export class TutorService {
     }));
   }
 
-  async explain({ state, engineEvaluation = null, tutorDepth = 'hint', language = 'es' }) {
-    const provider = this.providers.get(this.providerId);
+  async explain({ state, engineEvaluation = null, tutorDepth = 'hint', language = 'es', providerId = null }) {
+    const selectedProviderId = providerId || this.providerId;
+    const provider = this.providers.get(selectedProviderId);
     if (!provider) {
-      throw new TutorProviderUnavailableError(`Tutor provider is not implemented: ${this.providerId}`);
+      throw new TutorProviderUnavailableError(`Tutor provider is not implemented: ${selectedProviderId}`);
     }
 
     const currentMove = state.moves.at(-1) ?? null;

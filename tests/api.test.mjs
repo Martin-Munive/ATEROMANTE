@@ -293,7 +293,7 @@ test('local API lists tutor providers and stores tutor explanations', async () =
     const tutorResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/tutor/explain`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ tutorDepth: 'hint', language: 'es' }),
+      body: JSON.stringify({ providerId: 'mock-local', tutorDepth: 'hint', language: 'es' }),
     });
     assert.equal(tutorResponse.status, 201);
     const explanation = await readJson(tutorResponse);
