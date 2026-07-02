@@ -250,11 +250,11 @@ export function useChessGame() {
     setLoading(true);
     setSelectedSquare(null);
     setLastError(null);
-      setAnalysis(null);
-      setAnalysisError(null);
-      setActiveVariationId(null);
-      setActiveVariationPly(0);
-      try {
+    setAnalysis(null);
+    setAnalysisError(null);
+    setActiveVariationId(null);
+    setActiveVariationPly(0);
+    try {
       const nextState = await getJson<ApiGameState>(`${apiBaseUrl}/api/games/${gameId}`);
       setState(nextState);
       await refreshRecentSessions();

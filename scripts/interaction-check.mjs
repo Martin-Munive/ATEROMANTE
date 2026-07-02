@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -74,7 +74,11 @@ async function main() {
   try {
     await waitForServer();
     const browser = await launchBrowser();
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await context.newPage();
     const consoleErrors = [];
     page.on('console', (message) => {
       if (message.type() === 'error') {
@@ -130,6 +134,27 @@ async function main() {
     await page.getByText('c5 Nf3', { exact: false }).waitFor();
     await page.getByText('e6', { exact: true }).waitFor();
     await page.getByText('training-match.pgn', { exact: true }).waitFor();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exportar' }).click();
+    const download = await downloadPromise;
+    const exportedPgnPath = resolve(artifactsDir, 'interaction-exported-training-match.pgn');
+    await download.saveAs(exportedPgnPath);
+    const exportedPgn = await readFile(exportedPgnPath, 'utf8');
+    const expectedExportTokens = [
+      '[Event "Training Match"]',
+      '{Claims central space.}',
+      '$1',
+      'c5',
+      'e6',
+      '2. Nf3',
+    ];
+    const missingExportTokens = expectedExportTokens.filter((token) => !exportedPgn.includes(token));
+    if (missingExportTokens.length > 0) {
+      throw new Error(`PGN export missing expected tokens: ${missingExportTokens.join(', ')}`);
+    }
+    if (exportedPgn.includes(importedPgnPath)) {
+      throw new Error('PGN export leaked the local import path.');
+    }
     await page.getByRole('button', { name: /PGN 1\.1.*c5 Nf3/ }).click();
     await page.getByText('Variante PGN', { exact: true }).waitFor();
     await page.getByText('0/2', { exact: true }).first().waitFor();
@@ -149,6 +174,7 @@ async function main() {
     console.log(`interaction_artifact=${resolve(artifactsDir, 'interaction-e2e4.png')}`);
     console.log(`fen_import_artifact=${resolve(artifactsDir, 'interaction-fen-import.png')}`);
     console.log(`pgn_import_artifact=${resolve(artifactsDir, 'interaction-pgn-import.png')}`);
+    console.log(`pgn_export_artifact=${resolve(artifactsDir, 'interaction-exported-training-match.pgn')}`);
   } finally {
     stopProcessTree(server);
     if (serverOutput.length > 0) {
