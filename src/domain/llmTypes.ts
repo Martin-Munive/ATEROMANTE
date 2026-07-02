@@ -1,7 +1,7 @@
 import type { MatchPolicy } from './sessionTypes';
 
 export type LlmProviderKind =
-  | 'openai-compatible'
+  | 'chat-completions-compatible'
   | 'anthropic-compatible'
   | 'local-http'
   | 'mock';

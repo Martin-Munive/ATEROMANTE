@@ -6,13 +6,13 @@ const mockProvider = new MockTutorProvider();
 export const llmProviderConfigs: LlmProviderConfig[] = [
   mockProvider.config,
   {
-    id: 'openai-compatible-default',
-    label: 'OpenAI-compatible API',
-    kind: 'openai-compatible',
+    id: 'chat-completions-compatible',
+    label: 'Chat completions compatible API',
+    kind: 'chat-completions-compatible',
     model: 'configured-by-user',
     enabled: false,
-    baseUrl: 'https://api.openai.com/v1',
-    apiKeyEnv: 'ATEROMANTE_OPENAI_API_KEY',
+    baseUrl: '',
+    apiKeyEnv: 'ATEROMANTE_CHAT_API_KEY',
     supportsStreaming: true,
   },
   {

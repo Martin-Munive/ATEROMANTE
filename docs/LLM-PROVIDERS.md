@@ -36,7 +36,7 @@ The provider returns:
 
 - `mock`: implemented local placeholder for development, tests and offline QA.
 - `local-http`: implemented local model server integration through HTTP.
-- `openai-compatible`: remote chat/completion APIs with OpenAI-style endpoints.
+- `chat-completions-compatible`: remote chat/completion APIs with a generic messages/completions contract.
 - `anthropic-compatible`: remote message APIs with Anthropic-style endpoints.
 
 The default active provider is:

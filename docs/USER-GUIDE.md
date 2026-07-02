@@ -160,6 +160,6 @@ npm run qa:interaction
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
 - PGN import/export currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback, opening a branch as a new study and promoting a branch into a separate main-line study.
-- Remote OpenAI-compatible providers are documented but not connected yet; `mock-local` and `local-http-default` are implemented.
+- Remote chat-completions-compatible providers are documented but not connected yet; `mock-local` and `local-http-default` are implemented.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

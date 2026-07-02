@@ -121,7 +121,7 @@ Current responsibilities:
 - call the active provider;
 - persist each explanation in `tutor_events` and `event_log`.
 
-The current implemented providers are `mock-local` and `local-http-default`. Remote OpenAI-compatible providers are intentionally listed as configuration targets but not implemented in this cut.
+The current implemented providers are `mock-local` and `local-http-default`. Remote chat-completions-compatible providers are intentionally listed as configuration targets but not implemented in this cut.
 
 ### Persistence
 `local/persistence/schema.sql` defines the current SQLite schema.
