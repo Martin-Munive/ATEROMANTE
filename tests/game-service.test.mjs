@@ -214,6 +214,28 @@ test('GameService creates a new study from a PGN variation', () => {
   closeDatabase(db);
 });
 
+test('GameService exports PGN with headers, annotations and variations', () => {
+  const db = openAteromanteDatabase(':memory:');
+  const service = new GameService({ db });
+
+  const imported = service.importPgn({
+    pgn: [
+      '[Event "Training Match"]',
+      '[White "Alice"]',
+      '[Black "Bob"]',
+      '',
+      '1. e4! {Claims central space.} e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 $1 Nc6',
+    ].join('\n'),
+  });
+  const exported = service.exportPgn(imported.game.id);
+
+  assert.match(exported, /\[Event "Training Match"\]/);
+  assert.match(exported, /\[White "Alice"\]/);
+  assert.match(exported, /1\. e4 \{Claims central space\.\} \$1 \(1\.\.\. c5 \(1\.\.\. e6\) 2\. Nf3\) e5 2\. Nf3 \$1 Nc6 \*/);
+
+  closeDatabase(db);
+});
+
 test('GameService preserves PGN source metadata without local paths', () => {
   const db = openAteromanteDatabase(':memory:');
   const service = new GameService({ db });

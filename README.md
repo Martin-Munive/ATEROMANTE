@@ -95,6 +95,7 @@ Implementado:
 - preservacion de subvariantes PGN con profundidad y relacion padre-hijo;
 - playback temporal de variantes PGN importadas sin mutar la linea principal guardada;
 - apertura de una variante PGN como nueva sesion de estudio derivada;
+- exportacion PGN enriquecida con headers, comentarios, NAGs y variantes preservadas;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;

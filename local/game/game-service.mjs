@@ -222,6 +222,78 @@ function sanMovesToPgn(sanMoves) {
   return turns.join(' ');
 }
 
+function formatPgnHeaders(headers, result) {
+  const normalizedHeaders = {
+    Event: headers.Event ?? 'ATEROMANTE Study',
+    Site: headers.Site ?? 'Local',
+    Date: headers.Date ?? '????.??.??',
+    Round: headers.Round ?? '?',
+    White: headers.White ?? 'White',
+    Black: headers.Black ?? 'Black',
+    Result: headers.Result ?? result ?? '*',
+    ...headers,
+  };
+
+  return Object.entries(normalizedHeaders)
+    .map(([key, value]) => `[${key} "${String(value).replaceAll('"', "'")}"]`)
+    .join('\n');
+}
+
+function formatMoveNumber(ply) {
+  return `${Math.floor((ply - 1) / 2) + 1}.`;
+}
+
+function exportTimelinePgn(timeline) {
+  const headers = timeline.pgnHeaders?.headers ?? {};
+  const annotationsByPly = new Map();
+  const topLevelVariationsByPly = new Map();
+
+  for (const annotation of timeline.pgnAnnotations) {
+    const ply = annotation.ply ?? 0;
+    const existing = annotationsByPly.get(ply) ?? [];
+    existing.push(annotation);
+    annotationsByPly.set(ply, existing);
+  }
+
+  for (const variation of timeline.pgnVariations) {
+    if (variation.parent_variation_index !== null && variation.parent_variation_index !== undefined) {
+      continue;
+    }
+    const ply = variation.parent_ply ?? 0;
+    const existing = topLevelVariationsByPly.get(ply) ?? [];
+    existing.push(variation);
+    topLevelVariationsByPly.set(ply, existing);
+  }
+
+  const parts = [];
+  for (const variation of topLevelVariationsByPly.get(0) ?? []) {
+    parts.push(`(${variation.raw_pgn})`);
+  }
+
+  for (const move of timeline.moves) {
+    if (move.ply % 2 === 1) {
+      parts.push(formatMoveNumber(move.ply));
+    }
+    parts.push(move.san);
+
+    for (const annotation of annotationsByPly.get(move.ply) ?? []) {
+      if (annotation.annotation_type === 'nag') {
+        parts.push(annotation.value);
+      } else {
+        parts.push(`{${annotation.value}}`);
+      }
+    }
+
+    for (const variation of topLevelVariationsByPly.get(move.ply) ?? []) {
+      parts.push(`(${variation.raw_pgn})`);
+    }
+  }
+
+  const result = timeline.game.result ?? '*';
+  parts.push(result);
+  return `${formatPgnHeaders(headers, result)}\n\n${parts.join(' ')}`;
+}
+
 function collectVariationBody(source, startIndex) {
   let depth = 1;
   let raw = '';
@@ -697,6 +769,14 @@ export class GameService {
         sourceType: 'text',
       },
     });
+  }
+
+  exportPgn(gameId) {
+    const timeline = this.games.getGameTimeline(gameId);
+    if (!timeline.game) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+    return exportTimelinePgn(timeline);
   }
 
   listRecentTrainingGames(limit = 8) {

@@ -207,6 +207,13 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(variationStudyResponse.status, 201);
     const variationStudy = await readJson(variationStudyResponse);
     assert.deepEqual(variationStudy.moves.map((move) => move.san), ['e4', 'c5', 'Nf3']);
+
+    const exportResponse = await fetch(`${baseUrl}/api/games/${imported.gameId}/export/pgn`);
+    assert.equal(exportResponse.status, 200);
+    assert.match(exportResponse.headers.get('content-type') ?? '', /application\/x-chess-pgn/);
+    const exported = await exportResponse.text();
+    assert.match(exported, /\[Event "Training Match"\]/);
+    assert.match(exported, /\(1\.\.\. c5 \(1\.\.\. e6\) 2\. Nf3\)/);
   });
 });
 

@@ -14,6 +14,7 @@
 - Import browser-read `.pgn` files with sanitized source metadata.
 - Add temporary PGN variation playback.
 - Open a PGN variation as a derived study session.
+- Export enriched PGN with headers, annotations, NAGs and variations.
 - Store games and moves in SQLite.
 - Add tutor panel with provider abstraction.
 - Add provider-agnostic LLM contract.

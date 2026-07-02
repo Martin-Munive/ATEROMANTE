@@ -162,6 +162,11 @@ button {
   font-size: 12px;
 }
 
+.header-actions button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
 .profile-badge {
   width: 58px;
   height: 58px;

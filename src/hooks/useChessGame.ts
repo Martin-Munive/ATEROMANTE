@@ -169,6 +169,15 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return payload;
 }
 
+async function getText(url: string): Promise<string> {
+  const response = await fetch(url);
+  const payload = await response.text();
+  if (!response.ok) {
+    throw new Error(payload || 'request_failed');
+  }
+  return payload;
+}
+
 export function useChessGame() {
   const [state, setState] = useState<ApiGameState | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -186,6 +195,7 @@ export function useChessGame() {
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
   const [pgnImportError, setPgnImportError] = useState<string | null>(null);
+  const [pgnExportError, setPgnExportError] = useState<string | null>(null);
   const [activeVariationId, setActiveVariationId] = useState<string | null>(null);
   const [activeVariationPly, setActiveVariationPly] = useState(0);
 
@@ -525,6 +535,31 @@ export function useChessGame() {
     }
   }
 
+  async function exportPgn() {
+    if (!state) {
+      return null;
+    }
+    setPgnExportError(null);
+    try {
+      const exported = await getText(`${apiBaseUrl}/api/games/${state.gameId}/export/pgn`);
+      const blob = new Blob([exported], { type: 'application/x-chess-pgn;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const baseName = state.pgnSource?.fileName?.replace(/\.pgn$/i, '') || state.pgnHeaders.Event || 'ateromante-study';
+      link.href = url;
+      link.download = `${baseName}.pgn`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return exported;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo exportar la partida PGN.';
+      setPgnExportError(message);
+      return null;
+    }
+  }
+
   return {
     pieces: variationPreview?.pieces ?? boardPieces(chess),
     selectedSquare,
@@ -554,6 +589,7 @@ export function useChessGame() {
     fenImportError,
     pgnImportLoading,
     pgnImportError,
+    pgnExportError,
     currentGameId: state?.gameId ?? null,
     recentSessions,
     sessionsLoading,
@@ -569,5 +605,6 @@ export function useChessGame() {
     closeVariation,
     stepVariation,
     openVariationAsStudy,
+    exportPgn,
   };
 }

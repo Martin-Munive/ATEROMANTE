@@ -68,6 +68,7 @@ POST /api/sessions/recover-or-create
 POST /api/import/fen
 POST /api/import/pgn
 GET  /api/games/:gameId
+GET  /api/games/:gameId/export/pgn
 POST /api/games/:gameId/moves
 POST /api/games/:gameId/analysis
 GET  /api/engine/status
@@ -166,6 +167,7 @@ Important tables:
 9. PGN source metadata is stored in `pgn_sources`, including source type, sanitized file name, optional MIME type, byte size and SHA-256 hash.
 10. Imported PGN variations and subvariations are stored in `pgn_variations` with their raw text, normalized SAN line, main-line anchor, depth and parent variation index.
 11. React loads the imported game, shows available player/event/source metadata, renders comments and NAGs in the tutor panel, shows imported variation lines, supports temporary variation playback, can open a branch as a new `variation-study`, and refreshes recent sessions.
+12. `GameService.exportPgn()` rebuilds an enriched PGN from persisted headers, moves, comments, NAGs and top-level variations with nested raw text.
 
 Current scope:
 
@@ -179,6 +181,7 @@ Current scope:
 - nested variation depth and parent relation;
 - temporary interactive variation playback in the browser;
 - branch-to-study creation through `POST /api/games/:gameId/variations/:variationIndex/study`;
+- enriched PGN export through `GET /api/games/:gameId/export/pgn`;
 - no variation editing yet.
 
 ## Adding Features

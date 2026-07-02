@@ -34,6 +34,16 @@ function sendNoContent(response) {
   response.end();
 }
 
+function sendText(response, status, body, contentType = 'text/plain; charset=utf-8') {
+  response.writeHead(status, {
+    'content-type': contentType,
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end(body);
+}
+
 async function readJson(request) {
   const chunks = [];
   for await (const chunk of request) {
@@ -234,6 +244,12 @@ export function createAteromanteApiServer({
         });
         const state = service.getGameState(imported.game.id);
         sendJson(response, 201, serializeState(state));
+        return;
+      }
+
+      const exportPgnMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/export\/pgn$/);
+      if (request.method === 'GET' && exportPgnMatch) {
+        sendText(response, 200, service.exportPgn(exportPgnMatch[1]), 'application/x-chess-pgn; charset=utf-8');
         return;
       }
 

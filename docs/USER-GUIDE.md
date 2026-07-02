@@ -10,6 +10,7 @@ ATEROMANTE is currently a local technical spike for chess training. It lets you:
 - paste a FEN position and open it as a new study session;
 - paste a basic PGN main line and open it as a persisted study session;
 - preserve standard PGN headers, main-line comments, main-line NAG annotations, imported PGN variations and PGN source metadata;
+- export the current study as enriched PGN;
 - request engine analysis through a configured external UCI engine;
 - see the engine score, best move, principal variation and a visual best-move arrow;
 - run local QA commands to verify the app.
@@ -90,6 +91,8 @@ The current PGN slice is intentionally main-line first. Imported variations and 
 
 Use the play button in the variation playback controls to open the selected branch as a new `variation-study` session. This creates a separate study line and keeps the original imported game unchanged.
 
+Use the `Exportar` button in the top bar to download the current study as PGN. The exported PGN includes headers, main-line moves, comments, NAGs and preserved variations/subvariations.
+
 ## Engine Analysis
 The engine panel can analyze the current persisted position.
 
@@ -138,7 +141,7 @@ npm run qa:interaction
 ## Current Limits
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
-- PGN import currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback and opening a branch as a new study.
+- PGN import/export currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback and opening a branch as a new study.
 - LLM providers are not connected.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

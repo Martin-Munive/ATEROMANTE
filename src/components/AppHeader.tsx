@@ -1,7 +1,12 @@
 import { Download, MoreHorizontal, Save, Sparkles } from 'lucide-react';
 import { trainingSession } from '../data/session';
+import type { useChessGame } from '../hooks/useChessGame';
 
-export function AppHeader() {
+interface AppHeaderProps {
+  game: ReturnType<typeof useChessGame>;
+}
+
+export function AppHeader({ game }: AppHeaderProps) {
   return (
     <header className="app-header">
       <div className="brand">
@@ -36,7 +41,16 @@ export function AppHeader() {
       <div className="header-actions" aria-label="Acciones">
         <button title="Nuevo"><Sparkles size={18} />Nuevo</button>
         <button title="Guardar"><Save size={18} />Guardar</button>
-        <button title="Exportar"><Download size={18} />Exportar</button>
+        <button
+          disabled={game.loading}
+          onClick={() => {
+            void game.exportPgn();
+          }}
+          title="Exportar PGN"
+          type="button"
+        >
+          <Download size={18} />Exportar
+        </button>
         <button title="Más"><MoreHorizontal size={18} />Más</button>
       </div>
       <div className="profile-badge">GM</div>

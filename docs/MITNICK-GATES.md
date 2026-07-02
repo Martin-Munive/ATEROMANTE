@@ -63,6 +63,7 @@ Evidence:
 - Browser-read `.pgn` imports store sanitized source metadata in `pgn_sources`; local filesystem paths are stripped and not persisted.
 - Variation playback reconstructs temporary board states in the browser from the persisted branch anchor without mutating the saved main line.
 - Opening a variation as study creates a new `variation-study` session instead of rewriting the imported source game.
+- Enriched PGN export is rebuilt from persisted normalized data and does not expose local file paths.
 
 Criteria:
 - no private material in public project;
