@@ -36,7 +36,7 @@ The provider returns:
 
 - `mock`: implemented local placeholder for development, tests and offline QA.
 - `local-http`: implemented local model server integration through HTTP.
-- `chat-completions-compatible`: remote chat/completion APIs with a generic messages/completions contract.
+- `chat-completions-compatible`: implemented remote or self-hosted chat/completion APIs with a generic messages/completions contract.
 - `anthropic-compatible`: remote message APIs with Anthropic-style endpoints.
 
 The default active provider is:
@@ -55,6 +55,18 @@ ATEROMANTE_LOCAL_LLM_TIMEOUT_MS=15000
 ```
 
 The local provider sends prepared context and asks for strict JSON. It also accepts plain text responses and normalizes them into the tutor response contract.
+
+For a neutral chat completions API:
+
+```text
+ATEROMANTE_LLM_PROVIDER=chat-completions-compatible
+ATEROMANTE_CHAT_BASE_URL=https://your-provider.example/v1
+ATEROMANTE_CHAT_MODEL=your-chat-model
+ATEROMANTE_CHAT_API_KEY=your-secret-key
+ATEROMANTE_CHAT_TIMEOUT_MS=30000
+```
+
+The chat provider posts `messages`, requests JSON output and normalizes either structured content or plain text into the tutor response contract.
 
 ## Secrets
 API keys must stay outside Git.

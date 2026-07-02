@@ -125,6 +125,15 @@ ATEROMANTE_LOCAL_LLM_URL=http://127.0.0.1:11434/api/generate
 ATEROMANTE_LOCAL_LLM_MODEL=your-local-model
 ```
 
+To use a remote or self-hosted chat completions API, configure:
+
+```text
+ATEROMANTE_LLM_PROVIDER=chat-completions-compatible
+ATEROMANTE_CHAT_BASE_URL=https://your-provider.example/v1
+ATEROMANTE_CHAT_MODEL=your-chat-model
+ATEROMANTE_CHAT_API_KEY=your-secret-key
+```
+
 ## Local Data
 By default, runtime data is stored under:
 
@@ -160,6 +169,6 @@ npm run qa:interaction
 - No Stockfish binary is included.
 - Stockfish 18 has been validated on the current Windows development machine, but broad platform validation is still pending.
 - PGN import/export currently supports pasted text or local `.pgn` files, a basic main line, standard headers, comments, NAG annotations, source metadata, preserved nested variation text, temporary variation playback, opening a branch as a new study and promoting a branch into a separate main-line study.
-- Remote chat-completions-compatible providers are documented but not connected yet; `mock-local` and `local-http-default` are implemented.
+- `mock-local`, `local-http-default` and `chat-completions-compatible` are implemented; provider quality depends on the configured model.
 - Human-vs-human training rooms are design-stage only.
 - ATEROMANTE must not be used as hidden live assistance in competitive games.

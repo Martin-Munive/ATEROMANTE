@@ -121,7 +121,7 @@ Current responsibilities:
 - call the active provider;
 - persist each explanation in `tutor_events` and `event_log`.
 
-The current implemented providers are `mock-local` and `local-http-default`. Remote chat-completions-compatible providers are intentionally listed as configuration targets but not implemented in this cut.
+The current implemented providers are `mock-local`, `local-http-default` and `chat-completions-compatible`.
 
 ### Persistence
 `local/persistence/schema.sql` defines the current SQLite schema.
@@ -249,6 +249,7 @@ Implemented baseline:
 - `TutorEventRepository`;
 - API-side `mock-local` provider;
 - API-side `local-http-default` provider for local model servers;
+- API-side `chat-completions-compatible` provider for neutral messages/completions APIs;
 - browser panel provider/depth selection, action and rendering.
 
 ### Human Training Sessions
@@ -280,6 +281,7 @@ Current coverage includes:
 - UCI handshake, validation, depth bounds and missing engine errors;
 - browser interaction for `e2-e4`, tutor explanation, FEN import, PGN import, PGN export and PGN branch promotion.
 - service-level test coverage for `local-http-default` without external network.
+- service-level test coverage for `chat-completions-compatible` without external network.
 
 ## Visual QA
 Run:

@@ -6,6 +6,7 @@ export class TutorProviderUnavailableError extends Error {
 }
 
 const DEFAULT_LOCAL_HTTP_URL = 'http://127.0.0.1:11434/api/generate';
+const DEFAULT_CHAT_COMPLETIONS_PATH = '/chat/completions';
 
 export const tutorProviderConfigs = [
   {
@@ -138,6 +139,42 @@ function buildLocalHttpPrompt(context) {
   ].join('\n');
 }
 
+function buildChatMessages(context) {
+  return [
+    {
+      role: 'system',
+      content: [
+        'Eres el tutor educativo de ATEROMANTE.',
+        'No valides reglas de ajedrez ni inventes legalidad; usa solo el contexto preparado.',
+        'Responde en JSON estricto con: summary, candidateMove, teachingFocus, visualAnnotations, followUpExercise, confidence.',
+      ].join(' '),
+    },
+    {
+      role: 'user',
+      content: [
+        `Idioma: ${context.language}`,
+        `Modo tutor: ${context.tutorDepth}`,
+        `FEN: ${context.fen}`,
+        `PGN: ${context.pgn || '(sin PGN)'}`,
+        `Ultima jugada: ${context.lastMove || '(sin jugada)'}`,
+        `Lineas de motor: ${JSON.stringify(context.engineLines)}`,
+        `Perfil: ${context.studentProfileSummary}`,
+        `Politica: ${JSON.stringify(context.matchPolicy)}`,
+      ].join('\n'),
+    },
+  ];
+}
+
+function resolveChatCompletionsUrl(baseUrl) {
+  const trimmed = String(baseUrl || '').trim().replace(/\/$/, '');
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.endsWith(DEFAULT_CHAT_COMPLETIONS_PATH)
+    ? trimmed
+    : `${trimmed}${DEFAULT_CHAT_COMPLETIONS_PATH}`;
+}
+
 class MockTutorProvider {
   config = tutorProviderConfigs[0];
 
@@ -163,6 +200,63 @@ class MockTutorProvider {
       followUpExercise: 'Anota dos jugadas candidatas y descarta una por una amenaza concreta.',
       confidence: context.engineLines.length > 0 ? 'medium' : 'low',
     };
+  }
+}
+
+export class ChatCompletionsTutorProvider {
+  constructor({
+    config = tutorProviderConfigs.find((provider) => provider.id === 'chat-completions-compatible'),
+    fetchImpl = globalThis.fetch,
+    timeoutMs = Number.parseInt(process.env.ATEROMANTE_CHAT_TIMEOUT_MS ?? '30000', 10),
+  } = {}) {
+    this.config = config;
+    this.fetchImpl = fetchImpl;
+    this.timeoutMs = Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 120000 ? timeoutMs : 30000;
+  }
+
+  async explainPosition(context) {
+    const model = process.env.ATEROMANTE_CHAT_MODEL || this.config.model;
+    const apiKey = process.env.ATEROMANTE_CHAT_API_KEY;
+    const url = resolveChatCompletionsUrl(process.env.ATEROMANTE_CHAT_BASE_URL || this.config.baseUrl);
+    if (!this.fetchImpl) {
+      throw new TutorProviderUnavailableError('fetch is not available for chat-completions-compatible provider');
+    }
+    if (!url || !model || model === 'configured-by-user' || !apiKey) {
+      throw new TutorProviderUnavailableError('ATEROMANTE_CHAT_BASE_URL, ATEROMANTE_CHAT_MODEL and ATEROMANTE_CHAT_API_KEY are required');
+    }
+
+    let response;
+    try {
+      response = await this.fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: buildChatMessages(context),
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (error) {
+      throw new TutorProviderUnavailableError(`Chat completions tutor request failed: ${error.message}`);
+    }
+
+    if (!response.ok) {
+      throw new TutorProviderUnavailableError(`Chat completions tutor returned HTTP ${response.status}`);
+    }
+
+    const rawPayload = await response.text();
+    let payload;
+    try {
+      payload = JSON.parse(rawPayload);
+    } catch {
+      payload = rawPayload;
+    }
+    return normalizeTutorResponse(payload);
   }
 }
 
@@ -223,6 +317,7 @@ export class TutorService {
     providerId = process.env.ATEROMANTE_LLM_PROVIDER || 'mock-local',
     providers = new Map([
       ['mock-local', new MockTutorProvider()],
+      ['chat-completions-compatible', new ChatCompletionsTutorProvider()],
       ['local-http-default', new LocalHttpTutorProvider()],
     ]),
     eventRepository,

@@ -71,6 +71,7 @@ Evidence:
 - Tutor explanations are persisted in `tutor_events` and traced through `event_log`.
 - `local-http-default` provider is implemented behind `TutorService` and covered with a local fake HTTP server test.
 - Tutor provider and depth selection are visible in the UI, while execution remains server-side.
+- `chat-completions-compatible` provider is implemented with neutral naming and covered with a local fake HTTP server test.
 
 Criteria:
 - no private material in public project;

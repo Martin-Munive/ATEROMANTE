@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { test } from 'node:test';
-import { LocalHttpTutorProvider, TutorService } from '../local/tutor/tutor-service.mjs';
+import { ChatCompletionsTutorProvider, LocalHttpTutorProvider, TutorService } from '../local/tutor/tutor-service.mjs';
 
 async function withHttpTutor(run) {
   const requests = [];
@@ -23,6 +23,50 @@ async function withHttpTutor(run) {
         followUpExercise: 'Encuentra dos formas de desarrollar una pieza menor.',
         confidence: 'medium',
       }),
+    }));
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  try {
+    await run(baseUrl, requests);
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+}
+
+async function withChatTutor(run) {
+  const requests = [];
+  const server = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) {
+      chunks.push(chunk);
+    }
+    const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    requests.push({
+      authorization: request.headers.authorization,
+      url: request.url,
+      payload,
+    });
+
+    response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            summary: 'Tutor chat compatible: desarrolla una pieza y controla el centro.',
+            candidateMove: 'Nf3',
+            teachingFocus: ['desarrollo', 'centro'],
+            visualAnnotations: [{ kind: 'arrow', from: 'g1', to: 'f3', color: 'blue' }],
+            followUpExercise: 'Compara Nf3 con Nc3 en la estructura actual.',
+            confidence: 'high',
+          }),
+        },
+      }],
     }));
   });
 
@@ -96,5 +140,70 @@ test('LocalHttpTutorProvider normalizes a local model response and stores a tuto
     assert.equal(explanation.confidence, 'medium');
     assert.equal(storedEvents[0].llmProviderId, 'local-http-default');
     assert.equal(storedEvents[0].tutorMode, 'strategic');
+  });
+});
+
+test('ChatCompletionsTutorProvider sends prepared messages and normalizes the response', async () => {
+  await withChatTutor(async (baseUrl, requests) => {
+    const provider = new ChatCompletionsTutorProvider({
+      config: {
+        id: 'chat-completions-compatible',
+        label: 'Chat completions compatible API',
+        kind: 'chat-completions-compatible',
+        model: 'ateromante-chat-test',
+        enabled: true,
+        baseUrl,
+        apiKeyEnv: 'ATEROMANTE_CHAT_API_KEY',
+        supportsStreaming: true,
+      },
+      timeoutMs: 5000,
+    });
+    const originalEnv = {
+      baseUrl: process.env.ATEROMANTE_CHAT_BASE_URL,
+      apiKey: process.env.ATEROMANTE_CHAT_API_KEY,
+      model: process.env.ATEROMANTE_CHAT_MODEL,
+    };
+    process.env.ATEROMANTE_CHAT_BASE_URL = baseUrl;
+    process.env.ATEROMANTE_CHAT_API_KEY = 'test-secret';
+    process.env.ATEROMANTE_CHAT_MODEL = 'ateromante-chat-test';
+    try {
+      const explanation = await provider.explainPosition({
+        language: 'es',
+        tutorDepth: 'hint',
+        fen: createState().fen,
+        pgn: createState().pgn,
+        lastMove: 'e4',
+        engineLines: [],
+        studentProfileSummary: 'Perfil de prueba.',
+        matchPolicy: { tutorVisibility: 'private', assistanceTiming: 'live', enginePermission: 'evaluation-only' },
+      });
+
+      assert.equal(requests.length, 1);
+      assert.equal(requests[0].url, '/chat/completions');
+      assert.equal(requests[0].authorization, 'Bearer test-secret');
+      assert.equal(requests[0].payload.model, 'ateromante-chat-test');
+      assert.equal(requests[0].payload.messages.length, 2);
+      assert.match(requests[0].payload.messages[1].content, /FEN:/);
+      assert.equal(explanation.summary, 'Tutor chat compatible: desarrolla una pieza y controla el centro.');
+      assert.equal(explanation.candidateMove, 'Nf3');
+      assert.deepEqual(explanation.teachingFocus, ['desarrollo', 'centro']);
+      assert.equal(explanation.confidence, 'high');
+    } finally {
+      if (originalEnv.baseUrl === undefined) {
+        delete process.env.ATEROMANTE_CHAT_BASE_URL;
+      } else {
+        process.env.ATEROMANTE_CHAT_BASE_URL = originalEnv.baseUrl;
+      }
+      if (originalEnv.apiKey === undefined) {
+        delete process.env.ATEROMANTE_CHAT_API_KEY;
+      } else {
+        process.env.ATEROMANTE_CHAT_API_KEY = originalEnv.apiKey;
+      }
+      if (originalEnv.model === undefined) {
+        delete process.env.ATEROMANTE_CHAT_MODEL;
+      } else {
+        process.env.ATEROMANTE_CHAT_MODEL = originalEnv.model;
+      }
+    }
   });
 });
