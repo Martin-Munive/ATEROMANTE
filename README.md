@@ -96,6 +96,8 @@ Implementado:
 - playback temporal de variantes PGN importadas sin mutar la linea principal guardada;
 - apertura de una variante PGN como nueva sesion de estudio derivada;
 - exportacion PGN enriquecida con headers, comentarios, NAGs y variantes preservadas;
+- reporte post-partida inicial desde jugadas, evaluaciones del motor y explicaciones del tutor;
+- conversion del reporte post-partida en eventos de aprendizaje persistidos y trazables;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -105,7 +107,7 @@ Implementado:
 Pendiente:
 
 - soporte PGN avanzado: edicion de variantes y metadatos de fuente enriquecidos para conectores;
-- tutor LLM configurable por API;
+- calidad pedagogica del tutor con modelos reales y memoria de aprendizaje;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
 
@@ -169,6 +171,8 @@ Local app layer
   -> Moderator Service
   -> Engine Service
   -> Tutor Service
+  -> Report Service
+  -> Learning Memory Service
   -> Metrics Service
 
 Local storage
@@ -233,7 +237,7 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 2. Crear modelo local completo de sesiones, eventos y politicas de ayuda.
 3. Expandir SQLite para importacion PGN, revisiones y reportes.
 4. Ampliar importacion/exportacion PGN.
-5. Construir reportes post-partida.
+5. Ampliar reportes post-partida hacia diagnostico, memoria y ejercicios.
 6. Agregar tutor LLM configurable por API.
 7. Prototipar servidor/moderador.
 8. Agregar busqueda por temas, aperturas y posiciones.

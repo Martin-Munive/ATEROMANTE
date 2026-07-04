@@ -53,7 +53,14 @@ export function AppHeader({ game }: AppHeaderProps) {
         </button>
         <button title="Más"><MoreHorizontal size={18} />Más</button>
       </div>
-      <div className="profile-badge">GM</div>
+      <div className="creator-credit" aria-label="Autor de la aplicación">
+        <div className="creator-copy">
+          <strong>Martín Munive</strong>
+          <span>Medico General</span>
+          <span>Analista y programador de Software</span>
+        </div>
+        <img className="creator-logo" src="/brand/Logofrontletra.svg" alt="ANASKAI" />
+      </div>
     </header>
   );
 }

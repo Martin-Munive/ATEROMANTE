@@ -651,6 +651,17 @@ export class TutorEventRepository {
       annotations: JSON.parse(row.annotations_json),
     };
   }
+
+  listByGame(gameId) {
+    return this.db
+      .prepare('SELECT * FROM tutor_events WHERE game_id = ? ORDER BY created_at DESC')
+      .all(gameId)
+      .map((row) => ({
+        ...row,
+        teaching_focus: JSON.parse(row.teaching_focus_json),
+        annotations: JSON.parse(row.annotations_json),
+      }));
+  }
 }
 
 export class LearningRepository {
@@ -765,5 +776,83 @@ export class LearningRepository {
     return this.db
       .prepare(`SELECT * FROM learning_events ${where} ORDER BY created_at DESC`)
       .all(...values);
+  }
+
+  listByGame(gameId) {
+    return this.db
+      .prepare('SELECT * FROM learning_events WHERE game_id = ? ORDER BY created_at DESC')
+      .all(gameId);
+  }
+
+  createReviewItem({
+    learningEventId,
+    dueAt = null,
+    intervalDays = 1,
+    ease = 2.5,
+    lastResult = null,
+    nextPromptType = 'position-recall',
+  }) {
+    const reviewItemId = id('rev');
+    const timestamp = nowIso();
+    const dueDate = dueAt ?? new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    this.db.prepare(`
+      INSERT INTO review_items (
+        id, learning_event_id, due_at, interval_days, ease, last_result,
+        next_prompt_type, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      reviewItemId,
+      learningEventId,
+      dueDate,
+      intervalDays,
+      ease,
+      lastResult,
+      nextPromptType,
+      timestamp,
+      timestamp,
+    );
+
+    const learningEvent = this.getLearningEvent(learningEventId);
+    this.eventLog.appendEvent({
+      eventType: 'review.item.created',
+      sessionId: learningEvent?.session_id ?? null,
+      gameId: learningEvent?.game_id ?? null,
+      moveId: learningEvent?.move_id ?? null,
+      positionId: learningEvent?.position_id ?? null,
+      payload: { reviewItemId, learningEventId, dueAt: dueDate, intervalDays, nextPromptType },
+      occurredAt: timestamp,
+    });
+
+    return this.getReviewItem(reviewItemId);
+  }
+
+  getReviewItem(reviewItemId) {
+    return this.db.prepare('SELECT * FROM review_items WHERE id = ?').get(reviewItemId);
+  }
+
+  listReviewItems({ gameId = null, limit = 10 } = {}) {
+    const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 50 ? limit : 10;
+    const where = gameId ? 'WHERE le.game_id = ?' : '';
+    const values = gameId ? [gameId, boundedLimit] : [boundedLimit];
+
+    return this.db.prepare(`
+      SELECT
+        ri.*,
+        le.session_id,
+        le.game_id,
+        le.move_id,
+        le.position_id,
+        le.theme,
+        le.skill,
+        le.summary,
+        le.mastery_state,
+        le.confidence
+      FROM review_items ri
+      JOIN learning_events le ON le.id = ri.learning_event_id
+      ${where}
+      ORDER BY ri.due_at ASC, ri.created_at ASC
+      LIMIT ?
+    `).all(...values);
   }
 }

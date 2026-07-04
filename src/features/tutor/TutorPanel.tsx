@@ -1,4 +1,4 @@
-import { Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpenCheck, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { useChessGame } from '../../hooks/useChessGame';
 
 interface TutorPanelProps {
@@ -104,6 +104,83 @@ export function TutorPanel({ game }: TutorPanelProps) {
           </ul>
         </div>
       )}
+      <div className="lesson-block report-block">
+        <h3>Reporte post-partida</h3>
+        {game.postGameReportLoading && <p><strong>Actualizando reporte…</strong></p>}
+        {!game.postGameReportLoading && game.postGameReportError && <p><strong>{game.postGameReportError}</strong></p>}
+        {!game.postGameReportLoading && game.postGameReport && (
+          <>
+            <dl className="report-grid">
+              <div>
+                <dt>Jugadas</dt>
+                <dd>{game.postGameReport.summary.moveCount}</dd>
+              </div>
+              <div>
+                <dt>Análisis</dt>
+                <dd>{game.postGameReport.summary.analyzedPositions}</dd>
+              </div>
+              <div>
+                <dt>Tutor</dt>
+                <dd>{game.postGameReport.summary.tutorExplanations}</dd>
+              </div>
+              <div>
+                <dt>Memoria</dt>
+                <dd>{game.postGameReport.summary.learningEvents}</dd>
+              </div>
+              <div>
+                <dt>Repasos</dt>
+                <dd>{game.postGameReport.summary.reviewItems}</dd>
+              </div>
+            </dl>
+            {game.postGameReport.latestEngine && (
+              <p>
+                <strong>Motor:</strong> {game.postGameReport.latestEngine.bestMove}
+                {' · '}
+                {game.postGameReport.latestEngine.scoreLabel}
+                {' · '}
+                d{game.postGameReport.latestEngine.depth}
+              </p>
+            )}
+            {game.postGameReport.tutorFocus.length > 0 && (
+              <ul className="annotation-list">
+                {game.postGameReport.tutorFocus.slice(0, 2).map((focus) => (
+                  <li key={focus.label}><strong>Foco x{focus.count}</strong>{focus.label}</li>
+                ))}
+              </ul>
+            )}
+            {game.postGameReport.reviewQueue.length > 0 && (
+              <ul className="annotation-list review-list">
+                {game.postGameReport.reviewQueue.slice(0, 2).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.theme}</strong>
+                    {`${item.nextPromptType} · ${new Date(item.dueAt).toLocaleDateString('es-CO')}`}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>{game.postGameReport.recommendations[0] ?? 'La partida ya tiene una base minima para revision.'}</p>
+            <div className="report-actions">
+              <button
+                disabled={game.learningEventLoading || game.history.length === 0}
+                onClick={() => {
+                  void game.createLearningEventFromReport();
+                }}
+                type="button"
+              >
+                <BookOpenCheck size={16} />Guardar aprendizaje
+              </button>
+            </div>
+            {game.learningEventError && <p><strong>{game.learningEventError}</strong></p>}
+            {game.lastLearningEvent && (
+              <p className="learning-feedback">
+                <strong>{game.lastLearningEvent.theme}</strong>
+                {' · '}
+                {game.lastLearningEvent.summary}
+              </p>
+            )}
+          </>
+        )}
+      </div>
       <div className="lesson-block">
         <h3>PGN</h3>
         <p>{game.pgn || 'La partida aun no tiene movimientos.'}</p>

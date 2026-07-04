@@ -25,9 +25,9 @@
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.
-- Generate post-game report.
+- Generate first post-game report summary.
+- Store first learning event from post-game report.
 - Suggest targeted exercises.
-- Store learning events.
 - Link every learning event to game, move and position.
 - Search lessons by opening, theme, mistake and position.
 
@@ -91,6 +91,8 @@
 - Optional local model support.
 
 ## Design Backlog
+- Audit responsive layout and resource distribution after the functional MVP is complete; current panels can exceed the visible window in some viewports.
+- Redesign the top-right ANASKAI creator credit; current implementation is stacked and poorly formatted, but remains deferred until the functional build is complete.
 - Professional default theme.
 - Board theme selector.
 - Piece theme selector.

@@ -309,6 +309,100 @@ test('local API lists tutor providers and stores tutor explanations', async () =
   });
 });
 
+test('local API builds a post-game report from engine and tutor events', async () => {
+  const engineService = {
+    async analyze() {
+      return {
+        engineName: 'Report Engine',
+        depth: 8,
+        multipv: 1,
+        scoreCp: 42,
+        scoreMate: null,
+        bestMove: 'g1f3',
+        principalVariation: ['g1f3', 'b8c6'],
+        perspective: 'side-to-move',
+      };
+    },
+  };
+
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(`${baseUrl}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo-practice', stationRole: 'hybrid' }),
+    });
+    const created = await readJson(createdResponse);
+
+    await fetch(`${baseUrl}/api/games/${created.gameId}/moves`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ from: 'e2', to: 'e4', promotion: 'q' }),
+    });
+
+    const analysisResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/analysis`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ depth: 8 }),
+    });
+    assert.equal(analysisResponse.status, 201);
+
+    const tutorResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/tutor/explain`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ providerId: 'mock-local', tutorDepth: 'strategic', language: 'es' }),
+    });
+    assert.equal(tutorResponse.status, 201);
+
+    const reportResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/report`);
+    assert.equal(reportResponse.status, 200);
+    const report = await readJson(reportResponse);
+
+    assert.equal(report.summary.moveCount, 1);
+    assert.equal(report.summary.analyzedPositions, 1);
+    assert.equal(report.summary.tutorExplanations, 1);
+    assert.equal(report.latestEngine.engineName, 'Report Engine');
+    assert.equal(report.latestEngine.bestMove, 'g1f3');
+    assert.equal(report.latestEngine.scoreLabel, '+0.42');
+    assert.equal(report.summary.learningEvents, 0);
+    assert.ok(report.tutorFocus.some((focus) => focus.label === 'centro'));
+    assert.ok(report.recommendations.some((recommendation) => /centro|aprendizaje|ejercicio/i.test(recommendation)));
+
+    const learningResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/learning/from-report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(learningResponse.status, 201);
+    const learning = await readJson(learningResponse);
+    assert.equal(learning.learningEvent.gameId, created.gameId);
+    assert.equal(learning.learningEvent.eventType, 'post_game_review');
+    assert.equal(learning.learningEvent.theme, 'centro');
+    assert.equal(learning.learningEvent.skill, 'strategic');
+    assert.ok(learning.learningEvent.moveId);
+    assert.ok(learning.learningEvent.positionId);
+    assert.ok(learning.learningEvent.tutorEventId);
+    assert.equal(learning.reviewItem.learningEventId, learning.learningEvent.id);
+    assert.equal(learning.reviewItem.gameId, created.gameId);
+    assert.equal(learning.reviewItem.nextPromptType, 'position-recall');
+    assert.equal(learning.report.summary.learningEvents, 1);
+    assert.equal(learning.report.summary.reviewItems, 1);
+
+    const updatedReportResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/report`);
+    assert.equal(updatedReportResponse.status, 200);
+    const updatedReport = await readJson(updatedReportResponse);
+    assert.equal(updatedReport.summary.learningEvents, 1);
+    assert.equal(updatedReport.summary.reviewItems, 1);
+    assert.equal(updatedReport.recentLearningEvents[0].id, learning.learningEvent.id);
+    assert.equal(updatedReport.reviewQueue[0].id, learning.reviewItem.id);
+
+    const reviewsResponse = await fetch(`${baseUrl}/api/reviews?gameId=${created.gameId}`);
+    assert.equal(reviewsResponse.status, 200);
+    const reviews = await readJson(reviewsResponse);
+    assert.equal(reviews.reviewItems.length, 1);
+    assert.equal(reviews.reviewItems[0].learningEventId, learning.learningEvent.id);
+  }, { engineService });
+});
+
 test('local API rejects illegal moves without mutating the game', async () => {
   await withServer(async (baseUrl) => {
     const createdResponse = await fetch(`${baseUrl}/api/sessions`, {

@@ -69,7 +69,9 @@ POST /api/sessions/recover-or-create
 POST /api/import/fen
 POST /api/import/pgn
 GET  /api/games/:gameId
+GET  /api/games/:gameId/report
 GET  /api/games/:gameId/export/pgn
+POST /api/games/:gameId/learning/from-report
 POST /api/games/:gameId/variations/:variationIndex/study
 POST /api/games/:gameId/variations/:variationIndex/mainline
 POST /api/games/:gameId/moves
@@ -175,6 +177,15 @@ Important tables:
 6. React renders summary, provider, confidence, candidate move and teaching focus.
 7. The UI can send a per-request `providerId` and `tutorDepth`; provider selection remains server-validated.
 
+### Post-Game Report
+1. React calls `GET /api/games/:gameId/report`.
+2. The API rebuilds deterministic game state through `GameService`.
+3. `EngineEvaluationRepository` returns stored engine analyses for the game.
+4. `TutorEventRepository` returns stored tutor explanations for the game.
+5. The API returns a compact report with move count, analyzed positions, tutor explanation count, latest engine recommendation, repeated tutor focus and next review suggestions.
+6. The tutor panel renders the report as a first local review layer.
+7. The UI can call `POST /api/games/:gameId/learning/from-report` to persist the top report recommendation as a `learning_events` row linked to the latest move, latest position and latest tutor event when available.
+
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.
 2. React posts to `POST /api/import/fen`.
@@ -246,7 +257,10 @@ Implemented baseline:
 
 - `GET /api/tutor/providers`;
 - `POST /api/games/:gameId/tutor/explain`;
+- `GET /api/games/:gameId/report`;
+- `POST /api/games/:gameId/learning/from-report`;
 - `TutorEventRepository`;
+- `TutorEventRepository.listByGame()`;
 - API-side `mock-local` provider;
 - API-side `local-http-default` provider for local model servers;
 - API-side `chat-completions-compatible` provider for neutral messages/completions APIs;
