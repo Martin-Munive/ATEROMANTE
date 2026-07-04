@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileInput, Gauge, UserRound } from 'lucide-react';
+import { FileInput, Gauge } from 'lucide-react';
 import { navigation } from '../data/session';
 import type { useChessGame } from '../hooks/useChessGame';
 
@@ -56,11 +56,11 @@ export function Sidebar({ game }: SidebarProps) {
         ))}
       </nav>
       <div className="profile-panel">
-        <div className="profile-title"><UserRound size={18} />Mi perfil</div>
+        <div className="profile-title"><Gauge size={18} />Estado local</div>
         <dl>
-          <div><dt>ELO Blitz</dt><dd>1824</dd></div>
-          <div><dt>ELO Rapid</dt><dd>1867</dd></div>
-          <div><dt>ELO Clásico</dt><dd>1921</dd></div>
+          <div><dt>Partida</dt><dd>{game.history.length} jugadas</dd></div>
+          <div><dt>Turno</dt><dd>{game.turn}</dd></div>
+          <div><dt>Resultado</dt><dd>{game.result}</dd></div>
         </dl>
       </div>
       <section className="fen-import-panel" aria-label="Importar posición FEN">

@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closeDatabase, openAteromanteDatabase } from '../persistence/database.mjs';
-import { EngineEvaluationRepository, TutorEventRepository } from '../persistence/repositories.mjs';
+import { EngineEvaluationRepository, LearningRepository, TutorEventRepository } from '../persistence/repositories.mjs';
 import { GameService, IllegalMoveError, InvalidFenError, InvalidPgnError } from '../game/game-service.mjs';
 import {
   UciEngineInputError,
@@ -150,6 +150,187 @@ function serializeEvaluation(row, perspective = 'side-to-move') {
   };
 }
 
+function serializeTutorEvent(row) {
+  return {
+    id: row.id,
+    gameId: row.game_id,
+    moveId: row.move_id,
+    positionId: row.position_id,
+    providerId: row.llm_provider_id,
+    tutorMode: row.tutor_mode,
+    visibility: row.visibility,
+    summary: row.summary,
+    teachingFocus: row.teaching_focus,
+    confidence: row.confidence,
+    createdAt: row.created_at,
+  };
+}
+
+function serializeLearningEvent(row) {
+  return {
+    id: row.id,
+    gameId: row.game_id,
+    moveId: row.move_id,
+    positionId: row.position_id,
+    tutorEventId: row.tutor_event_id,
+    eventType: row.event_type,
+    theme: row.theme,
+    skill: row.skill,
+    summary: row.summary,
+    explanation: row.explanation,
+    studentAction: row.student_action,
+    confidence: row.confidence,
+    masteryState: row.mastery_state,
+    createdAt: row.created_at,
+  };
+}
+
+function buildReviewExercisePrompt(row) {
+  const theme = row.theme || 'la idea critica';
+  const moveContext = Number.isInteger(row.position_ply) && row.position_ply > 0
+    ? `tras la jugada ${row.position_ply}`
+    : 'en la posicion inicial';
+  const sideContext = row.side_to_move === 'white'
+    ? 'Juegan blancas.'
+    : row.side_to_move === 'black'
+      ? 'Juegan negras.'
+      : 'Identifica el turno antes de responder.';
+
+  return `Ejercicio dirigido: reconstruye la idea de ${theme} ${moveContext}. ${sideContext} Escribe el plan, el riesgo principal y una candidata razonable antes de calificarte.`;
+}
+
+function assessReviewAnswer(row) {
+  const answer = typeof row.latest_answer === 'string' ? row.latest_answer.trim().toLowerCase() : '';
+  if (!answer) {
+    return null;
+  }
+
+  const themeTokens = String(row.theme ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9áéíóúñ]+/i)
+    .filter((token) => token.length >= 4);
+  const summaryTokens = String(row.summary ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9áéíóúñ]+/i)
+    .filter((token) => token.length >= 5)
+    .slice(0, 8);
+  const expectedTokens = [...new Set([...themeTokens, ...summaryTokens])];
+  const matchedTokens = expectedTokens.filter((token) => answer.includes(token));
+
+  return {
+    label: matchedTokens.length > 0 ? 'alineada' : 'requiere detalle',
+    matchedTerms: matchedTokens.slice(0, 4),
+    wordCount: answer.split(/\s+/).filter(Boolean).length,
+  };
+}
+
+function serializeReviewItem(row) {
+  return {
+    id: row.id,
+    learningEventId: row.learning_event_id,
+    gameId: row.game_id,
+    moveId: row.move_id,
+    positionId: row.position_id,
+    theme: row.theme,
+    skill: row.skill,
+    summary: row.summary,
+    masteryState: row.mastery_state,
+    confidence: row.confidence,
+    positionFen: row.position_fen ?? null,
+    positionPly: row.position_ply ?? null,
+    sideToMove: row.side_to_move ?? null,
+    exercisePrompt: buildReviewExercisePrompt(row),
+    dueAt: row.due_at,
+    intervalDays: row.interval_days,
+    ease: row.ease,
+    lastResult: row.last_result,
+    nextPromptType: row.next_prompt_type,
+    latestAnswer: row.latest_answer ?? null,
+    latestAnswerAssessment: assessReviewAnswer(row),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function scoreToLabel(evaluation) {
+  if (!evaluation) {
+    return 'Sin evaluacion';
+  }
+  if (evaluation.score_mate !== null) {
+    return `Mate ${evaluation.score_mate}`;
+  }
+  if (evaluation.score_cp === null || evaluation.score_cp === undefined) {
+    return 'Sin score';
+  }
+  const pawns = evaluation.score_cp / 100;
+  return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
+}
+
+function buildPostGameReport({
+  state,
+  evaluations,
+  tutorEventRows,
+  learningEventRows = [],
+  reviewItemRows = [],
+}) {
+  const focusCounts = new Map();
+  for (const event of tutorEventRows) {
+    for (const focus of event.teaching_focus) {
+      focusCounts.set(focus, (focusCounts.get(focus) ?? 0) + 1);
+    }
+  }
+
+  const tutorEvents = tutorEventRows.map(serializeTutorEvent);
+  const latestEvaluation = evaluations[0] ?? null;
+  const recommendations = [];
+
+  if (evaluations.length === 0) {
+    recommendations.push('Analiza al menos una posicion critica con el motor.');
+  }
+  if (tutorEvents.length === 0) {
+    recommendations.push('Genera una explicacion del tutor para registrar el primer aprendizaje.');
+  }
+  if (focusCounts.size > 0) {
+    const [mainFocus] = [...focusCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+    recommendations.push(`Revisar el tema recurrente: ${mainFocus}.`);
+  }
+  if (state.moves.length > 0 && evaluations.length > 0 && tutorEvents.length > 0) {
+    recommendations.push('Convertir esta revision en un evento de aprendizaje o ejercicio dirigido.');
+  }
+
+  return {
+    gameId: state.game.id,
+    sessionId: state.game.session_id,
+    generatedAt: new Date().toISOString(),
+    summary: {
+      moveCount: state.moves.length,
+      result: state.result,
+      analyzedPositions: evaluations.length,
+      tutorExplanations: tutorEvents.length,
+      learningEvents: learningEventRows.length,
+      reviewItems: reviewItemRows.length,
+      eventCount: state.events.length,
+    },
+    latestEngine: latestEvaluation
+      ? {
+          engineName: latestEvaluation.engine_name,
+          depth: latestEvaluation.depth,
+          bestMove: latestEvaluation.best_move,
+          scoreLabel: scoreToLabel(latestEvaluation),
+          createdAt: latestEvaluation.created_at,
+        }
+      : null,
+    tutorFocus: [...focusCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([label, count]) => ({ label, count })),
+    recentTutorEvents: tutorEvents.slice(0, 3),
+    recentLearningEvents: learningEventRows.slice(0, 3).map(serializeLearningEvent),
+    reviewQueue: reviewItemRows.slice(0, 3).map(serializeReviewItem),
+    recommendations,
+  };
+}
+
 export function createAteromanteApiServer({
   dbPath = DEFAULT_DB_PATH,
   engineService = new UciEngineService(),
@@ -159,6 +340,7 @@ export function createAteromanteApiServer({
   const service = new GameService({ db });
   const engineEvaluations = new EngineEvaluationRepository(db, service.eventLog);
   const tutorEvents = new TutorEventRepository(db, service.eventLog);
+  const learningEvents = new LearningRepository(db, service.eventLog);
   const tutorService = injectedTutorService ?? new TutorService({ eventRepository: tutorEvents });
 
   const server = createServer(async (request, response) => {
@@ -284,6 +466,136 @@ export function createAteromanteApiServer({
         return;
       }
 
+      const reportMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/report$/);
+      if (request.method === 'GET' && reportMatch) {
+        const state = service.getGameState(reportMatch[1]);
+        if (!state) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+
+        sendJson(response, 200, buildPostGameReport({
+          state,
+          evaluations: engineEvaluations.listByGame(reportMatch[1]),
+          tutorEventRows: tutorEvents.listByGame(reportMatch[1]),
+          learningEventRows: learningEvents.listByGame(reportMatch[1]),
+          reviewItemRows: learningEvents.listReviewItems({ gameId: reportMatch[1], limit: 10 }),
+        }));
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/reviews') {
+        const gameId = url.searchParams.get('gameId');
+        const limit = Number.parseInt(url.searchParams.get('limit') ?? '10', 10);
+        sendJson(response, 200, {
+          reviewItems: learningEvents.listReviewItems({ gameId, limit }).map(serializeReviewItem),
+        });
+        return;
+      }
+
+      const reviewResultMatch = url.pathname.match(/^\/api\/reviews\/([^/]+)\/result$/);
+      if (request.method === 'POST' && reviewResultMatch) {
+        const input = await readJson(request);
+        const reviewItem = learningEvents.recordReviewResult({
+          reviewItemId: reviewResultMatch[1],
+          result: input.result,
+          answerText: input.answerText,
+        });
+        if (!reviewItem) {
+          sendJson(response, 404, { error: 'review_item_not_found' });
+          return;
+        }
+        sendJson(response, 200, { reviewItem: serializeReviewItem(reviewItem) });
+        return;
+      }
+
+      const learningFromReportMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/learning\/from-report$/);
+      if (request.method === 'POST' && learningFromReportMatch) {
+        const gameId = learningFromReportMatch[1];
+        const state = service.getGameState(gameId);
+        if (!state) {
+          sendJson(response, 404, { error: 'game_not_found' });
+          return;
+        }
+        if (state.moves.length === 0) {
+          sendJson(response, 400, {
+            error: 'learning_source_required',
+            message: 'Registra al menos una jugada antes de crear un aprendizaje.',
+          });
+          return;
+        }
+
+        const evaluations = engineEvaluations.listByGame(gameId);
+        const tutorEventRows = tutorEvents.listByGame(gameId);
+        const report = buildPostGameReport({
+          state,
+          evaluations,
+          tutorEventRows,
+          learningEventRows: learningEvents.listByGame(gameId),
+          reviewItemRows: learningEvents.listReviewItems({ gameId, limit: 10 }),
+        });
+        const latestMove = state.moves.at(-1) ?? null;
+        const latestPosition = state.positions.at(-1) ?? null;
+        const latestTutorEvent = tutorEventRows[0] ?? null;
+        const topFocus = report.tutorFocus[0]?.label ?? 'revision-general';
+        const latestEvaluation = evaluations[0] ?? null;
+        const summary = report.recommendations[0] ?? `Revisar la posicion tras ${latestMove.san}.`;
+        const explanationParts = [
+          latestTutorEvent?.summary,
+          latestEvaluation ? `Motor: ${latestEvaluation.best_move} (${scoreToLabel(latestEvaluation)}).` : null,
+        ].filter(Boolean);
+
+        const learningEvent = learningEvents.createLearningEvent({
+          sessionId: state.game.session_id,
+          gameId,
+          moveId: latestMove?.id ?? null,
+          positionId: latestPosition?.id ?? null,
+          tutorEventId: latestTutorEvent?.id ?? null,
+          eventType: 'post_game_review',
+          theme: topFocus,
+          skill: latestTutorEvent?.tutor_mode ?? 'analysis',
+          summary,
+          explanation: explanationParts.join(' '),
+          studentAction: 'Convertido desde reporte post-partida.',
+          confidence: latestTutorEvent?.confidence ?? 'medium',
+          masteryState: 'new',
+          tags: [
+            { name: topFocus, category: 'tutor-focus' },
+            { name: 'post-game-report', category: 'source' },
+          ],
+        });
+        const reviewItem = learningEvents.createReviewItem({
+          learningEventId: learningEvent.id,
+          intervalDays: 1,
+          nextPromptType: 'position-recall',
+        });
+        const reviewQueue = learningEvents.listReviewItems({ gameId, limit: 10 });
+        const serializedReviewItem = reviewQueue.find((item) => item.id === reviewItem.id) ?? {
+          ...reviewItem,
+          game_id: learningEvent.game_id,
+          move_id: learningEvent.move_id,
+          position_id: learningEvent.position_id,
+          theme: learningEvent.theme,
+          skill: learningEvent.skill,
+          summary: learningEvent.summary,
+          mastery_state: learningEvent.mastery_state,
+          confidence: learningEvent.confidence,
+        };
+
+        sendJson(response, 201, {
+          learningEvent: serializeLearningEvent(learningEvent),
+          reviewItem: serializeReviewItem(serializedReviewItem),
+          report: buildPostGameReport({
+            state,
+            evaluations,
+            tutorEventRows,
+            learningEventRows: learningEvents.listByGame(gameId),
+            reviewItemRows: reviewQueue,
+          }),
+        });
+        return;
+      }
+
       const moveMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/moves$/);
       if (request.method === 'POST' && moveMatch) {
         const gameId = moveMatch[1];
@@ -392,6 +704,13 @@ export function createAteromanteApiServer({
         sendJson(response, 503, {
           error: 'tutor_provider_unavailable',
           message: 'Proveedor de tutor no disponible. Revisa ATEROMANTE_LLM_PROVIDER.',
+        });
+        return;
+      }
+      if (error instanceof Error && error.message === 'invalid_review_result') {
+        sendJson(response, 400, {
+          error: 'invalid_review_result',
+          message: 'Resultado de repaso invalido.',
         });
         return;
       }

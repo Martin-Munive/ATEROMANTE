@@ -72,6 +72,10 @@ Evidence:
 - `local-http-default` provider is implemented behind `TutorService` and covered with a local fake HTTP server test.
 - Tutor provider and depth selection are visible in the UI, while execution remains server-side.
 - `chat-completions-compatible` provider is implemented with neutral naming and covered with a local fake HTTP server test.
+- `GET /api/games/:gameId/report` builds the first post-game report from persisted moves, engine evaluations and tutor events.
+- The report panel shows compact counts, latest engine recommendation, recurring tutor focus and a next review suggestion without exposing private files.
+- `POST /api/games/:gameId/learning/from-report` persists the report recommendation as a `learning_events` row linked to local game, move, position and tutor event identifiers.
+- The report panel shows saved learning count and the last saved event without exposing private files or provider secrets.
 
 Criteria:
 - no private material in public project;
@@ -102,10 +106,13 @@ Evidence:
 - `docs/DEVELOPER-GUIDE.md` covers runtime shape, folders, API endpoints, FEN/PGN import/export flow, PGN source/header/comment/NAG/variation persistence/playback/promotion, tutor service baseline, services, tests and extension points.
 - `docs/ENGINE-SETUP.md` covers external UCI configuration, validation, troubleshooting and license note.
 - `docs/PRIVACY-AND-ANTIABUSE.md` covers local-first data, private material, secrets and assisted-play limits.
+- Each completed work slice must close with a brief progress report that states current advance, verification, relevant risk/debt and the next recommended step.
+- Non-blocking visual layout issues found during functional construction must be recorded as UI/UX debt and deferred unless they prevent use or verification.
 
 Residual risk before broader user/developer use:
-- user guide must be expanded when recursive variation editing, real LLM tutoring and reports exist;
+- user guide must be expanded when recursive variation editing, deeper diagnostic reports, review queues and exercise generation exist;
 - developer guide must be expanded when advanced PGN structures, tutor, metrics and connector services stabilize;
+- visible-window resource distribution still needs a dedicated responsive layout pass after the functional MVP is complete;
 - release candidates still need a documentation gate checklist tied to the exact release scope.
 
 Criteria:

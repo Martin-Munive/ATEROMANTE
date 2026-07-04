@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Chess, type Square } from 'chess.js';
 
 export type BoardPieces = Record<string, string>;
@@ -133,6 +133,100 @@ interface TutorProvidersResponse {
   providers: TutorProviderConfig[];
 }
 
+export interface PostGameReport {
+  gameId: string;
+  sessionId: string;
+  generatedAt: string;
+  summary: {
+    moveCount: number;
+    result: string;
+    analyzedPositions: number;
+    tutorExplanations: number;
+    learningEvents: number;
+    reviewItems: number;
+    eventCount: number;
+  };
+  latestEngine: {
+    engineName: string;
+    depth: number;
+    bestMove: string;
+    scoreLabel: string;
+    createdAt: string;
+  } | null;
+  tutorFocus: Array<{ label: string; count: number }>;
+  recentTutorEvents: Array<{
+    id: string;
+    providerId: string;
+    tutorMode: string;
+    summary: string;
+    teachingFocus: string[];
+    confidence: 'low' | 'medium' | 'high';
+    createdAt: string;
+  }>;
+  recentLearningEvents: LearningEvent[];
+  reviewQueue: ReviewItem[];
+  recommendations: string[];
+}
+
+export interface LearningEvent {
+  id: string;
+  gameId: string;
+  moveId: string | null;
+  positionId: string | null;
+  tutorEventId: string | null;
+  eventType: string;
+  theme: string;
+  skill: string;
+  summary: string;
+  explanation: string;
+  studentAction: string | null;
+  confidence: 'low' | 'medium' | 'high';
+  masteryState: 'new' | 'learning' | 'reviewing' | 'stable' | 'weak';
+  createdAt: string;
+}
+
+interface LearningFromReportResponse {
+  learningEvent: LearningEvent;
+  reviewItem: ReviewItem;
+  report: PostGameReport;
+}
+
+type ReviewResult = 'again' | 'hard' | 'good' | 'easy';
+
+interface ReviewResultResponse {
+  reviewItem: ReviewItem;
+}
+
+export interface ReviewItem {
+  id: string;
+  learningEventId: string;
+  gameId: string | null;
+  moveId: string | null;
+  positionId: string | null;
+  theme: string;
+  skill: string;
+  summary: string;
+  masteryState: 'new' | 'learning' | 'reviewing' | 'stable' | 'weak';
+  confidence: 'low' | 'medium' | 'high';
+  positionFen: string | null;
+  positionPly: number | null;
+  sideToMove: 'white' | 'black' | null;
+  exercisePrompt: string;
+  dueAt: string;
+  intervalDays: number;
+  ease: number;
+  lastResult: string | null;
+  nextPromptType: string;
+  latestAnswer: string | null;
+  latestAnswerAssessment: {
+    label: 'alineada' | 'requiere detalle';
+    matchedTerms: string[];
+    wordCount: number;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
 
 const pieceGlyphs: Record<string, string> = {
@@ -228,6 +322,14 @@ export function useChessGame() {
   const [tutorProviders, setTutorProviders] = useState<TutorProviderConfig[]>([]);
   const [selectedTutorProviderId, setSelectedTutorProviderId] = useState('mock-local');
   const [selectedTutorDepth, setSelectedTutorDepth] = useState<TutorExplanation['tutorMode']>('hint');
+  const [postGameReport, setPostGameReport] = useState<PostGameReport | null>(null);
+  const [postGameReportLoading, setPostGameReportLoading] = useState(false);
+  const [postGameReportError, setPostGameReportError] = useState<string | null>(null);
+  const [learningEventLoading, setLearningEventLoading] = useState(false);
+  const [learningEventError, setLearningEventError] = useState<string | null>(null);
+  const [lastLearningEvent, setLastLearningEvent] = useState<LearningEvent | null>(null);
+  const [reviewResultLoadingId, setReviewResultLoadingId] = useState<string | null>(null);
+  const [reviewResultError, setReviewResultError] = useState<string | null>(null);
   const [fenImportLoading, setFenImportLoading] = useState(false);
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
@@ -300,6 +402,28 @@ export function useChessGame() {
     }
   }
 
+  const refreshPostGameReport = useCallback(async (gameId = state?.gameId ?? null) => {
+    if (!gameId) {
+      setPostGameReport(null);
+      return null;
+    }
+
+    setPostGameReportLoading(true);
+    setPostGameReportError(null);
+    try {
+      const report = await getJson<PostGameReport>(`${apiBaseUrl}/api/games/${gameId}/report`);
+      setPostGameReport(report);
+      return report;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo generar el reporte.';
+      setPostGameReport(null);
+      setPostGameReportError(message);
+      return null;
+    } finally {
+      setPostGameReportLoading(false);
+    }
+  }, [state?.gameId]);
+
   async function loadGame(gameId: string) {
     setLoading(true);
     setSelectedSquare(null);
@@ -308,6 +432,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -336,6 +464,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -367,6 +499,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     setActiveVariationId(null);
     setActiveVariationPly(0);
     try {
@@ -426,6 +562,15 @@ export function useChessGame() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!state?.gameId) {
+      setPostGameReport(null);
+      return;
+    }
+
+    void refreshPostGameReport(state.gameId);
+  }, [refreshPostGameReport, state?.gameId, state?.moves.length]);
 
   const chess = useMemo(() => new Chess(state?.fen), [state?.fen]);
   const activeVariation = useMemo(
@@ -507,6 +652,10 @@ export function useChessGame() {
       setAnalysisError(null);
       setTutorExplanation(null);
       setTutorError(null);
+      setPostGameReport(null);
+      setPostGameReportError(null);
+      setLearningEventError(null);
+      setLastLearningEvent(null);
       setSelectedSquare(null);
       setLastError(null);
       await refreshRecentSessions();
@@ -526,6 +675,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     try {
       setState(await createNewGame());
       await refreshRecentSessions();
@@ -567,6 +720,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     try {
       const imported = await postJson<ApiGameState>(
         `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/study`,
@@ -596,6 +753,10 @@ export function useChessGame() {
     setAnalysisError(null);
     setTutorExplanation(null);
     setTutorError(null);
+    setPostGameReport(null);
+    setPostGameReportError(null);
+    setLearningEventError(null);
+    setLastLearningEvent(null);
     try {
       const promoted = await postJson<ApiGameState>(
         `${apiBaseUrl}/api/games/${state.gameId}/variations/${activeVariation.variationIndex}/mainline`,
@@ -624,6 +785,7 @@ export function useChessGame() {
     try {
       const result = await postJson<EngineAnalysis>(`${apiBaseUrl}/api/games/${state.gameId}/analysis`, { depth });
       setAnalysis(result);
+      await refreshPostGameReport(state.gameId);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo analizar la posición.';
@@ -655,6 +817,7 @@ export function useChessGame() {
         language: 'es',
       });
       setTutorExplanation(result);
+      await refreshPostGameReport(state.gameId);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo obtener la explicación del tutor.';
@@ -663,6 +826,53 @@ export function useChessGame() {
       return null;
     } finally {
       setTutorLoading(false);
+    }
+  }
+
+  async function createLearningEventFromReport() {
+    if (!state || learningEventLoading) {
+      return null;
+    }
+
+    setLearningEventLoading(true);
+    setLearningEventError(null);
+    try {
+      const result = await postJson<LearningFromReportResponse>(
+        `${apiBaseUrl}/api/games/${state.gameId}/learning/from-report`,
+        {},
+      );
+      setLastLearningEvent(result.learningEvent);
+      setPostGameReport(result.report);
+      return result.learningEvent;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo guardar el aprendizaje.';
+      setLearningEventError(message);
+      return null;
+    } finally {
+      setLearningEventLoading(false);
+    }
+  }
+
+  async function recordReviewResult(reviewItemId: string, result: ReviewResult, answerText = '') {
+    if (!state || reviewResultLoadingId) {
+      return null;
+    }
+
+    setReviewResultLoadingId(reviewItemId);
+    setReviewResultError(null);
+    try {
+      const payload = await postJson<ReviewResultResponse>(`${apiBaseUrl}/api/reviews/${reviewItemId}/result`, {
+        result,
+        answerText,
+      });
+      await refreshPostGameReport(state.gameId);
+      return payload.reviewItem;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo registrar el repaso.';
+      setReviewResultError(message);
+      return null;
+    } finally {
+      setReviewResultLoadingId(null);
     }
   }
 
@@ -720,6 +930,14 @@ export function useChessGame() {
     tutorProviders,
     selectedTutorProviderId,
     selectedTutorDepth,
+    postGameReport,
+    postGameReportLoading,
+    postGameReportError,
+    learningEventLoading,
+    learningEventError,
+    lastLearningEvent,
+    reviewResultLoadingId,
+    reviewResultError,
     engineStatus,
     engineStatusLoading,
     fenImportLoading,
@@ -735,8 +953,11 @@ export function useChessGame() {
     resetGame,
     analyzePosition,
     explainWithTutor,
+    createLearningEventFromReport,
+    recordReviewResult,
     setSelectedTutorProviderId,
     setSelectedTutorDepth,
+    refreshPostGameReport,
     refreshEngineStatus,
     importFen,
     importPgn,

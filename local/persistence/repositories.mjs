@@ -651,6 +651,17 @@ export class TutorEventRepository {
       annotations: JSON.parse(row.annotations_json),
     };
   }
+
+  listByGame(gameId) {
+    return this.db
+      .prepare('SELECT * FROM tutor_events WHERE game_id = ? ORDER BY created_at DESC')
+      .all(gameId)
+      .map((row) => ({
+        ...row,
+        teaching_focus: JSON.parse(row.teaching_focus_json),
+        annotations: JSON.parse(row.annotations_json),
+      }));
+  }
 }
 
 export class LearningRepository {
@@ -765,5 +776,197 @@ export class LearningRepository {
     return this.db
       .prepare(`SELECT * FROM learning_events ${where} ORDER BY created_at DESC`)
       .all(...values);
+  }
+
+  listByGame(gameId) {
+    return this.db
+      .prepare('SELECT * FROM learning_events WHERE game_id = ? ORDER BY created_at DESC')
+      .all(gameId);
+  }
+
+  createReviewItem({
+    learningEventId,
+    dueAt = null,
+    intervalDays = 1,
+    ease = 2.5,
+    lastResult = null,
+    nextPromptType = 'position-recall',
+  }) {
+    const reviewItemId = id('rev');
+    const timestamp = nowIso();
+    const dueDate = dueAt ?? new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    this.db.prepare(`
+      INSERT INTO review_items (
+        id, learning_event_id, due_at, interval_days, ease, last_result,
+        next_prompt_type, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      reviewItemId,
+      learningEventId,
+      dueDate,
+      intervalDays,
+      ease,
+      lastResult,
+      nextPromptType,
+      timestamp,
+      timestamp,
+    );
+
+    const learningEvent = this.getLearningEvent(learningEventId);
+    this.eventLog.appendEvent({
+      eventType: 'review.item.created',
+      sessionId: learningEvent?.session_id ?? null,
+      gameId: learningEvent?.game_id ?? null,
+      moveId: learningEvent?.move_id ?? null,
+      positionId: learningEvent?.position_id ?? null,
+      payload: { reviewItemId, learningEventId, dueAt: dueDate, intervalDays, nextPromptType },
+      occurredAt: timestamp,
+    });
+
+    return this.getReviewItem(reviewItemId);
+  }
+
+  getReviewItem(reviewItemId) {
+    return this.db.prepare('SELECT * FROM review_items WHERE id = ?').get(reviewItemId);
+  }
+
+  getReviewItemDetail(reviewItemId) {
+    return this.db.prepare(`
+      SELECT
+        ri.*,
+        le.session_id,
+        le.game_id,
+        le.move_id,
+        le.position_id,
+        le.theme,
+        le.skill,
+        le.summary,
+        le.mastery_state,
+        le.confidence,
+        p.fen AS position_fen,
+        p.ply AS position_ply,
+        p.side_to_move,
+        (
+          SELECT ra.answer_text
+          FROM review_attempts ra
+          WHERE ra.review_item_id = ri.id
+          ORDER BY ra.created_at DESC
+          LIMIT 1
+        ) AS latest_answer
+      FROM review_items ri
+      JOIN learning_events le ON le.id = ri.learning_event_id
+      LEFT JOIN positions p ON p.id = le.position_id
+      WHERE ri.id = ?
+    `).get(reviewItemId);
+  }
+
+  recordReviewResult({ reviewItemId, result, answerText = '' }) {
+    const allowedResults = new Set(['again', 'hard', 'good', 'easy']);
+    if (!allowedResults.has(result)) {
+      throw new Error('invalid_review_result');
+    }
+
+    const current = this.getReviewItemDetail(reviewItemId);
+    if (!current) {
+      return null;
+    }
+
+    const nextEase = Math.max(1.3, current.ease + ({
+      again: -0.25,
+      hard: -0.1,
+      good: 0,
+      easy: 0.15,
+    })[result]);
+    const nextIntervalDays = ({
+      again: 1,
+      hard: Math.max(1, Math.ceil(current.interval_days * 1.2)),
+      good: Math.max(1, Math.ceil(current.interval_days * nextEase)),
+      easy: Math.max(2, Math.ceil(current.interval_days * (nextEase + 0.5))),
+    })[result];
+    const masteryState = ({
+      again: 'weak',
+      hard: 'reviewing',
+      good: 'learning',
+      easy: 'stable',
+    })[result];
+    const timestamp = nowIso();
+    const dueAt = new Date(Date.now() + nextIntervalDays * 24 * 60 * 60 * 1000).toISOString();
+    const answer = typeof answerText === 'string' ? answerText.trim().slice(0, 2000) : '';
+
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare(`
+        INSERT INTO review_attempts (id, review_item_id, result, answer_text, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(id('att'), reviewItemId, result, answer, timestamp);
+      this.db.prepare(`
+        UPDATE review_items
+        SET due_at = ?, interval_days = ?, ease = ?, last_result = ?, updated_at = ?
+        WHERE id = ?
+      `).run(dueAt, nextIntervalDays, nextEase, result, timestamp, reviewItemId);
+      this.db.prepare('UPDATE learning_events SET mastery_state = ? WHERE id = ?')
+        .run(masteryState, current.learning_event_id);
+      this.eventLog.appendEvent({
+        eventType: 'review.item.answered',
+        sessionId: current.session_id,
+        gameId: current.game_id,
+        moveId: current.move_id,
+        positionId: current.position_id,
+        payload: {
+          reviewItemId,
+          learningEventId: current.learning_event_id,
+          result,
+          dueAt,
+          intervalDays: nextIntervalDays,
+          ease: nextEase,
+          masteryState,
+          answerLength: answer.length,
+        },
+        occurredAt: timestamp,
+      });
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+
+    return this.getReviewItemDetail(reviewItemId);
+  }
+
+  listReviewItems({ gameId = null, limit = 10 } = {}) {
+    const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 50 ? limit : 10;
+    const where = gameId ? 'WHERE le.game_id = ?' : '';
+    const values = gameId ? [gameId, boundedLimit] : [boundedLimit];
+
+    return this.db.prepare(`
+      SELECT
+        ri.*,
+        le.session_id,
+        le.game_id,
+        le.move_id,
+        le.position_id,
+        le.theme,
+        le.skill,
+        le.summary,
+        le.mastery_state,
+        le.confidence,
+        p.fen AS position_fen,
+        p.ply AS position_ply,
+        p.side_to_move,
+        (
+          SELECT ra.answer_text
+          FROM review_attempts ra
+          WHERE ra.review_item_id = ri.id
+          ORDER BY ra.created_at DESC
+          LIMIT 1
+        ) AS latest_answer
+      FROM review_items ri
+      JOIN learning_events le ON le.id = ri.learning_event_id
+      LEFT JOIN positions p ON p.id = le.position_id
+      ${where}
+      ORDER BY ri.due_at ASC, ri.created_at ASC
+      LIMIT ?
+    `).all(...values);
   }
 }

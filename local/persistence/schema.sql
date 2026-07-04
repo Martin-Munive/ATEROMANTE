@@ -231,6 +231,14 @@ CREATE TABLE IF NOT EXISTS review_items (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS review_attempts (
+  id TEXT PRIMARY KEY,
+  review_item_id TEXT NOT NULL REFERENCES review_items(id) ON DELETE CASCADE,
+  result TEXT NOT NULL CHECK (result IN ('again', 'hard', 'good', 'easy')),
+  answer_text TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_source_external ON games(source, external_id);
 CREATE INDEX IF NOT EXISTS idx_pgn_sources_sha256 ON pgn_sources(pgn_sha256);
 CREATE INDEX IF NOT EXISTS idx_games_opening_result ON games(opening_eco, result);
@@ -245,4 +253,5 @@ CREATE INDEX IF NOT EXISTS idx_engine_move_depth ON engine_evaluations(move_id, 
 CREATE INDEX IF NOT EXISTS idx_learning_theme ON learning_events(theme);
 CREATE INDEX IF NOT EXISTS idx_learning_skill ON learning_events(skill);
 CREATE INDEX IF NOT EXISTS idx_reviews_due ON review_items(due_at);
+CREATE INDEX IF NOT EXISTS idx_review_attempts_item ON review_attempts(review_item_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);

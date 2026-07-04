@@ -25,9 +25,9 @@
 - Replay game move by move.
 - Run engine analysis on critical positions.
 - Classify mistakes.
-- Generate post-game report.
-- Suggest targeted exercises.
-- Store learning events.
+- Generate first post-game report summary.
+- Store first learning event from post-game report.
+- Generate directed review exercise prompts from saved positions.
 - Link every learning event to game, move and position.
 - Search lessons by opening, theme, mistake and position.
 
@@ -37,6 +37,7 @@
 - Tag moves and positions by phase, theme and mistake type.
 - Add FTS search for tutor explanations and notes.
 - Add review queue from learning events.
+- Record basic review results, written attempts and lightweight answer alignment.
 - Build "where did I learn this?" retrieval.
 
 ## MVP 2 - Local Training Game
@@ -91,6 +92,8 @@
 - Optional local model support.
 
 ## Design Backlog
+- Audit responsive layout and resource distribution after the functional MVP is complete; current panels can exceed the visible window in some viewports.
+- Redesign the top-right ANASKAI creator credit; current implementation is stacked and poorly formatted, but remains deferred until the functional build is complete.
 - Professional default theme.
 - Board theme selector.
 - Piece theme selector.

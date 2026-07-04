@@ -8,6 +8,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+dev-local.*.log
 *.tsbuildinfo
 qa-artifacts/
 data/

@@ -40,6 +40,7 @@ test('migration creates the normalized persistence core', () => {
     'pgn_headers',
     'pgn_sources',
     'pgn_variations',
+    'review_attempts',
     'positions',
     'review_items',
     'study_sessions',
@@ -202,8 +203,26 @@ test('learning events can be traced back to the source position', () => {
   assert.equal(found.length, 1);
   assert.equal(found[0].id, lesson.id);
 
+  const review = learning.createReviewItem({
+    learningEventId: lesson.id,
+    gameId: game.id,
+    positionId: position.id,
+    nextPromptType: 'position-recall',
+  });
+  const result = learning.recordReviewResult({
+    reviewItemId: review.id,
+    result: 'good',
+    answerText: 'Debo ocupar el centro antes de jugar por el flanco.',
+  });
+  assert.equal(result.position_fen, STANDARD_STARTING_FEN);
+  assert.equal(result.position_ply, 0);
+  assert.equal(result.side_to_move, 'white');
+  assert.equal(result.latest_answer, 'Debo ocupar el centro antes de jugar por el flanco.');
+  assert.equal(result.last_result, 'good');
+
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));
+  assert.ok(sessionEvents.some((event) => event.event_type === 'review.item.answered'));
   closeDatabase(db);
 });
 

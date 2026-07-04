@@ -8,10 +8,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const artifactsDir = resolve(projectRoot, 'qa-artifacts');
 const port = process.env.PORT ?? '5174';
+const apiPort = process.env.ATEROMANTE_API_PORT ?? '4174';
+const apiBaseUrl = process.env.VITE_API_BASE_URL ?? `http://127.0.0.1:${apiPort}`;
 const url = `http://127.0.0.1:${port}`;
 
 if (!/^\d{2,5}$/.test(port)) {
   throw new Error(`Invalid PORT value: ${port}`);
+}
+
+if (!/^\d{2,5}$/.test(apiPort)) {
+  throw new Error(`Invalid ATEROMANTE_API_PORT value: ${apiPort}`);
 }
 
 async function waitForServer(timeoutMs = 30000) {
@@ -63,9 +69,9 @@ async function main() {
       ...process.env,
       BROWSER: 'none',
       PORT: port,
-      ATEROMANTE_API_PORT: '4174',
+      ATEROMANTE_API_PORT: apiPort,
       ATEROMANTE_DB_PATH: ':memory:',
-      VITE_API_BASE_URL: 'http://127.0.0.1:4174',
+      VITE_API_BASE_URL: apiBaseUrl,
     },
   });
   server.stdout.on('data', (chunk) => serverOutput.push(chunk.toString()));
@@ -109,6 +115,15 @@ async function main() {
     await page.getByRole('button', { name: /Explicar/ }).click();
     await tutorResponsePromise;
     await page.getByText('pista breve', { exact: false }).waitFor();
+    await page.getByRole('button', { name: 'Guardar aprendizaje' }).click();
+    await page.getByText('Memoria').waitFor();
+    await page.getByText('Repasos').waitFor();
+    await page.getByText('position-recall · nuevo · pendiente', { exact: false }).waitFor();
+    await page.getByText('Ejercicio dirigido', { exact: false }).waitFor();
+    await page.getByLabel(/Respuesta de repaso/i).fill('Recorde el centro antes de calificar el repaso.');
+    await page.getByRole('button', { name: 'Fácil' }).click();
+    await page.getByText('estable · Fácil', { exact: false }).waitFor();
+    await page.getByText('Respuesta alineada', { exact: false }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-e2e4.png'), fullPage: true });
 
     const importedFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';

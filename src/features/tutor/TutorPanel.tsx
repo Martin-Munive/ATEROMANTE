@@ -1,4 +1,5 @@
-import { Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpenCheck, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 import type { useChessGame } from '../../hooks/useChessGame';
 
 interface TutorPanelProps {
@@ -6,6 +7,7 @@ interface TutorPanelProps {
 }
 
 export function TutorPanel({ game }: TutorPanelProps) {
+  const [reviewAnswers, setReviewAnswers] = useState<Record<string, string>>({});
   const lastMove = game.lastMove?.san ?? 'sin jugada';
   const verdict = game.lastError ?? (game.inCheck ? 'Jaque detectado: revisa la seguridad del rey.' : 'Movimiento legal registrado por el árbitro interno.');
   const tutorDepths = [
@@ -14,6 +16,19 @@ export function TutorPanel({ game }: TutorPanelProps) {
     { value: 'strategic', label: 'Plan' },
     { value: 'full-lesson', label: 'Clase' },
   ] as const;
+  const reviewResultLabels = {
+    again: 'Repetir',
+    hard: 'Difícil',
+    good: 'Bien',
+    easy: 'Fácil',
+  } as const;
+  const masteryLabels = {
+    new: 'nuevo',
+    learning: 'en aprendizaje',
+    reviewing: 'en revisión',
+    stable: 'estable',
+    weak: 'débil',
+  } as const;
 
   return (
     <section className="tutor-panel">
@@ -104,6 +119,127 @@ export function TutorPanel({ game }: TutorPanelProps) {
           </ul>
         </div>
       )}
+      <div className="lesson-block report-block">
+        <h3>Reporte post-partida</h3>
+        {game.postGameReportLoading && <p><strong>Actualizando reporte…</strong></p>}
+        {!game.postGameReportLoading && game.postGameReportError && <p><strong>{game.postGameReportError}</strong></p>}
+        {!game.postGameReportLoading && game.postGameReport && (
+          <>
+            <dl className="report-grid">
+              <div>
+                <dt>Jugadas</dt>
+                <dd>{game.postGameReport.summary.moveCount}</dd>
+              </div>
+              <div>
+                <dt>Análisis</dt>
+                <dd>{game.postGameReport.summary.analyzedPositions}</dd>
+              </div>
+              <div>
+                <dt>Tutor</dt>
+                <dd>{game.postGameReport.summary.tutorExplanations}</dd>
+              </div>
+              <div>
+                <dt>Memoria</dt>
+                <dd>{game.postGameReport.summary.learningEvents}</dd>
+              </div>
+              <div>
+                <dt>Repasos</dt>
+                <dd>{game.postGameReport.summary.reviewItems}</dd>
+              </div>
+            </dl>
+            {game.postGameReport.latestEngine && (
+              <p>
+                <strong>Motor:</strong> {game.postGameReport.latestEngine.bestMove}
+                {' · '}
+                {game.postGameReport.latestEngine.scoreLabel}
+                {' · '}
+                d{game.postGameReport.latestEngine.depth}
+              </p>
+            )}
+            {game.postGameReport.tutorFocus.length > 0 && (
+              <ul className="annotation-list">
+                {game.postGameReport.tutorFocus.slice(0, 2).map((focus) => (
+                  <li key={focus.label}><strong>Foco x{focus.count}</strong>{focus.label}</li>
+                ))}
+              </ul>
+            )}
+            {game.postGameReport.reviewQueue.length > 0 && (
+              <ul className="annotation-list review-list">
+                {game.postGameReport.reviewQueue.slice(0, 2).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.theme}</strong>
+                    {[
+                      item.nextPromptType,
+                      masteryLabels[item.masteryState],
+                      item.lastResult ? reviewResultLabels[item.lastResult as keyof typeof reviewResultLabels] : 'pendiente',
+                      new Date(item.dueAt).toLocaleDateString('es-CO'),
+                    ].join(' · ')}
+                    <p className="review-exercise">{item.exercisePrompt}</p>
+                    {item.positionFen && (
+                      <small className="review-fen">{item.positionFen}</small>
+                    )}
+                    <textarea
+                      aria-label={`Respuesta de repaso ${item.theme}`}
+                      onChange={(event) => {
+                        setReviewAnswers((current) => ({
+                          ...current,
+                          [item.id]: event.target.value,
+                        }));
+                      }}
+                      placeholder="Escribe qué recuerdas, calculas o debes corregir en esta posición."
+                      value={reviewAnswers[item.id] ?? item.latestAnswer ?? ''}
+                    />
+                    {item.latestAnswerAssessment && (
+                      <small className="review-assessment">
+                        {`Respuesta ${item.latestAnswerAssessment.label} · ${item.latestAnswerAssessment.wordCount} palabras`}
+                      </small>
+                    )}
+                    <div className="review-actions">
+                      {Object.entries(reviewResultLabels).map(([result, label]) => (
+                        <button
+                          disabled={game.reviewResultLoadingId === item.id}
+                          key={result}
+                          onClick={() => {
+                            void game.recordReviewResult(
+                              item.id,
+                              result as 'again' | 'hard' | 'good' | 'easy',
+                              reviewAnswers[item.id] ?? item.latestAnswer ?? '',
+                            );
+                          }}
+                          type="button"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>{game.postGameReport.recommendations[0] ?? 'La partida ya tiene una base minima para revision.'}</p>
+            <div className="report-actions">
+              <button
+                disabled={game.learningEventLoading || game.history.length === 0}
+                onClick={() => {
+                  void game.createLearningEventFromReport();
+                }}
+                type="button"
+              >
+                <BookOpenCheck size={16} />Guardar aprendizaje
+              </button>
+            </div>
+            {game.learningEventError && <p><strong>{game.learningEventError}</strong></p>}
+            {game.reviewResultError && <p><strong>{game.reviewResultError}</strong></p>}
+            {game.lastLearningEvent && (
+              <p className="learning-feedback">
+                <strong>{game.lastLearningEvent.theme}</strong>
+                {' · '}
+                {game.lastLearningEvent.summary}
+              </p>
+            )}
+          </>
+        )}
+      </div>
       <div className="lesson-block">
         <h3>PGN</h3>
         <p>{game.pgn || 'La partida aun no tiene movimientos.'}</p>
