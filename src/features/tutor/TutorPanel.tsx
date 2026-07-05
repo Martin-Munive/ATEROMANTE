@@ -156,6 +156,17 @@ export function TutorPanel({ game }: TutorPanelProps) {
                 d{game.postGameReport.latestEngine.depth}
               </p>
             )}
+            {game.postGameReport.criticalPosition && (
+              <p className="critical-position">
+                <strong>Crítica:</strong>
+                {' '}
+                {game.postGameReport.criticalPosition.san
+                  ? `tras ${game.postGameReport.criticalPosition.san}`
+                  : `ply ${game.postGameReport.criticalPosition.ply}`}
+                {' · '}
+                {game.postGameReport.criticalPosition.reason}
+              </p>
+            )}
             {game.postGameReport.tutorFocus.length > 0 && (
               <ul className="annotation-list">
                 {game.postGameReport.tutorFocus.slice(0, 2).map((focus) => (
@@ -192,6 +203,14 @@ export function TutorPanel({ game }: TutorPanelProps) {
                     {item.latestAnswerAssessment && (
                       <small className="review-assessment">
                         {`Respuesta ${item.latestAnswerAssessment.label} · ${item.latestAnswerAssessment.wordCount} palabras`}
+                        {item.latestAnswerAssessment.candidateSignal && (
+                          <>
+                            {' · '}
+                            {`Motor ${item.latestAnswerAssessment.candidateSignal.expectedMove}`}
+                            {item.expectedDepth ? ` d${item.expectedDepth}` : ''}
+                            {` ${item.latestAnswerAssessment.candidateSignal.matched ? 'mencionado' : 'no mencionado'}`}
+                          </>
+                        )}
                       </small>
                     )}
                     <div className="review-actions">

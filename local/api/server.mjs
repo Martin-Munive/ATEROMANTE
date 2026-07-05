@@ -199,6 +199,18 @@ function buildReviewExercisePrompt(row) {
   return `Ejercicio dirigido: reconstruye la idea de ${theme} ${moveContext}. ${sideContext} Escribe el plan, el riesgo principal y una candidata razonable antes de calificarte.`;
 }
 
+function uciMoveTokens(uciMove) {
+  if (!uciMove || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uciMove)) {
+    return [];
+  }
+
+  return [
+    uciMove,
+    `${uciMove.slice(0, 2)}-${uciMove.slice(2, 4)}`,
+    uciMove.slice(2, 4),
+  ];
+}
+
 function assessReviewAnswer(row) {
   const answer = typeof row.latest_answer === 'string' ? row.latest_answer.trim().toLowerCase() : '';
   if (!answer) {
@@ -216,10 +228,19 @@ function assessReviewAnswer(row) {
     .slice(0, 8);
   const expectedTokens = [...new Set([...themeTokens, ...summaryTokens])];
   const matchedTokens = expectedTokens.filter((token) => answer.includes(token));
+  const expectedMoveTokens = uciMoveTokens(row.expected_best_move).map((token) => token.toLowerCase());
+  const candidateMatched = expectedMoveTokens.some((token) => answer.includes(token));
+  const candidateSignal = row.expected_best_move
+    ? {
+        expectedMove: row.expected_best_move,
+        matched: candidateMatched,
+      }
+    : null;
 
   return {
-    label: matchedTokens.length > 0 ? 'alineada' : 'requiere detalle',
+    label: matchedTokens.length > 0 || candidateMatched ? 'alineada' : 'requiere detalle',
     matchedTerms: matchedTokens.slice(0, 4),
+    candidateSignal,
     wordCount: answer.split(/\s+/).filter(Boolean).length,
   };
 }
@@ -240,6 +261,12 @@ function serializeReviewItem(row) {
     positionPly: row.position_ply ?? null,
     sideToMove: row.side_to_move ?? null,
     exercisePrompt: buildReviewExercisePrompt(row),
+    expectedBestMove: row.expected_best_move ?? null,
+    expectedScoreLabel: scoreToLabel({
+      score_cp: row.expected_score_cp,
+      score_mate: row.expected_score_mate,
+    }),
+    expectedDepth: row.expected_depth ?? null,
     dueAt: row.due_at,
     intervalDays: row.interval_days,
     ease: row.ease,
@@ -256,7 +283,7 @@ function scoreToLabel(evaluation) {
   if (!evaluation) {
     return 'Sin evaluacion';
   }
-  if (evaluation.score_mate !== null) {
+  if (evaluation.score_mate !== null && evaluation.score_mate !== undefined) {
     return `Mate ${evaluation.score_mate}`;
   }
   if (evaluation.score_cp === null || evaluation.score_cp === undefined) {
@@ -264,6 +291,51 @@ function scoreToLabel(evaluation) {
   }
   const pawns = evaluation.score_cp / 100;
   return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
+}
+
+function selectCriticalReviewSource({ state, evaluations }) {
+  const positionsById = new Map(state.positions.map((position) => [position.id, position]));
+  const movesById = new Map(state.moves.map((move) => [move.id, move]));
+  const evaluatedCandidates = evaluations
+    .map((evaluation) => {
+      const position = positionsById.get(evaluation.position_id);
+      if (!position) {
+        return null;
+      }
+
+      const scoreMagnitude = evaluation.score_mate !== null && evaluation.score_mate !== undefined
+        ? 100_000
+        : Math.abs(evaluation.score_cp ?? 0);
+      return {
+        evaluation,
+        position,
+        move: evaluation.move_id ? movesById.get(evaluation.move_id) ?? null : null,
+        scoreMagnitude,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.scoreMagnitude - a.scoreMagnitude || String(b.evaluation.created_at).localeCompare(a.evaluation.created_at));
+
+  const selected = evaluatedCandidates[0] ?? null;
+  if (selected) {
+    return {
+      position: selected.position,
+      move: selected.move,
+      evaluation: selected.evaluation,
+      reason: selected.scoreMagnitude >= 100_000
+        ? 'Evaluacion con secuencia de mate detectada por el motor.'
+        : `Mayor tension evaluada por motor: ${scoreToLabel(selected.evaluation)}.`,
+    };
+  }
+
+  return {
+    position: state.positions.at(-1) ?? null,
+    move: state.moves.at(-1) ?? null,
+    evaluation: null,
+    reason: evaluations.length === 0
+      ? 'Sin analisis de motor; se usa la posicion actual como punto de repaso.'
+      : 'No se encontro una evaluacion vinculada a posicion; se usa la posicion actual.',
+  };
 }
 
 function buildPostGameReport({
@@ -282,6 +354,7 @@ function buildPostGameReport({
 
   const tutorEvents = tutorEventRows.map(serializeTutorEvent);
   const latestEvaluation = evaluations[0] ?? null;
+  const criticalSource = selectCriticalReviewSource({ state, evaluations });
   const recommendations = [];
 
   if (evaluations.length === 0) {
@@ -318,6 +391,20 @@ function buildPostGameReport({
           bestMove: latestEvaluation.best_move,
           scoreLabel: scoreToLabel(latestEvaluation),
           createdAt: latestEvaluation.created_at,
+        }
+      : null,
+    criticalPosition: criticalSource.position
+      ? {
+          positionId: criticalSource.position.id,
+          moveId: criticalSource.move?.id ?? null,
+          ply: criticalSource.position.ply,
+          fen: criticalSource.position.fen,
+          sideToMove: criticalSource.position.side_to_move,
+          san: criticalSource.move?.san ?? null,
+          reason: criticalSource.reason,
+          bestMove: criticalSource.evaluation?.best_move ?? null,
+          scoreLabel: criticalSource.evaluation ? scoreToLabel(criticalSource.evaluation) : null,
+          depth: criticalSource.evaluation?.depth ?? null,
         }
       : null,
     tutorFocus: [...focusCounts.entries()]
@@ -534,12 +621,13 @@ export function createAteromanteApiServer({
           learningEventRows: learningEvents.listByGame(gameId),
           reviewItemRows: learningEvents.listReviewItems({ gameId, limit: 10 }),
         });
-        const latestMove = state.moves.at(-1) ?? null;
-        const latestPosition = state.positions.at(-1) ?? null;
+        const criticalSource = selectCriticalReviewSource({ state, evaluations });
+        const sourceMove = criticalSource.move ?? state.moves.at(-1) ?? null;
+        const sourcePosition = criticalSource.position ?? state.positions.at(-1) ?? null;
         const latestTutorEvent = tutorEventRows[0] ?? null;
         const topFocus = report.tutorFocus[0]?.label ?? 'revision-general';
         const latestEvaluation = evaluations[0] ?? null;
-        const summary = report.recommendations[0] ?? `Revisar la posicion tras ${latestMove.san}.`;
+        const summary = criticalSource.reason ?? report.recommendations[0] ?? `Revisar la posicion tras ${sourceMove?.san ?? 'la posicion actual'}.`;
         const explanationParts = [
           latestTutorEvent?.summary,
           latestEvaluation ? `Motor: ${latestEvaluation.best_move} (${scoreToLabel(latestEvaluation)}).` : null,
@@ -548,8 +636,8 @@ export function createAteromanteApiServer({
         const learningEvent = learningEvents.createLearningEvent({
           sessionId: state.game.session_id,
           gameId,
-          moveId: latestMove?.id ?? null,
-          positionId: latestPosition?.id ?? null,
+          moveId: sourceMove?.id ?? null,
+          positionId: sourcePosition?.id ?? null,
           tutorEventId: latestTutorEvent?.id ?? null,
           eventType: 'post_game_review',
           theme: topFocus,

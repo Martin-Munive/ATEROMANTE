@@ -28,6 +28,7 @@
 - Generate first post-game report summary.
 - Store first learning event from post-game report.
 - Generate directed review exercise prompts from saved positions.
+- Select critical positions automatically from stored engine evaluations.
 - Link every learning event to game, move and position.
 - Search lessons by opening, theme, mistake and position.
 
@@ -37,7 +38,7 @@
 - Tag moves and positions by phase, theme and mistake type.
 - Add FTS search for tutor explanations and notes.
 - Add review queue from learning events.
-- Record basic review results, written attempts and lightweight answer alignment.
+- Record basic review results, written attempts, lightweight answer alignment and engine-candidate mention.
 - Build "where did I learn this?" retrieval.
 
 ## MVP 2 - Local Training Game

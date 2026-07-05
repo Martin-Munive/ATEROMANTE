@@ -185,12 +185,12 @@ Important tables:
 2. The API rebuilds deterministic game state through `GameService`.
 3. `EngineEvaluationRepository` returns stored engine analyses for the game.
 4. `TutorEventRepository` returns stored tutor explanations for the game.
-5. The API returns a compact report with move count, analyzed positions, tutor explanation count, latest engine recommendation, repeated tutor focus and next review suggestions.
+5. The API returns a compact report with move count, analyzed positions, tutor explanation count, latest engine recommendation, selected critical position, repeated tutor focus and next review suggestions.
 6. The tutor panel renders the report as a first local review layer.
-7. The UI can call `POST /api/games/:gameId/learning/from-report` to persist the top report recommendation as a `learning_events` row linked to the latest move, latest position and latest tutor event when available.
-8. Review items include the linked position FEN, ply, side to move and an API-built exercise prompt for directed recall.
+7. The UI can call `POST /api/games/:gameId/learning/from-report` to persist the top report recommendation as a `learning_events` row linked to the selected critical move/position and latest tutor event when available.
+8. Review items include the linked position FEN, ply, side to move, latest engine candidate when available and an API-built exercise prompt for directed recall.
 9. The review queue can call `POST /api/reviews/:reviewItemId/result` with `again`, `hard`, `good` or `easy` plus optional `answerText` to store the learner's written recall before grading.
-10. The API updates the next due date, ease and mastery state, stores the written attempt in `review_attempts`, and returns a lightweight answer assessment based on expected theme/summary terms.
+10. The API updates the next due date, ease and mastery state, stores the written attempt in `review_attempts`, and returns a lightweight answer assessment based on expected theme/summary terms plus optional engine-candidate mention.
 
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.

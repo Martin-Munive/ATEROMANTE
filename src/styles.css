@@ -786,6 +786,11 @@ button {
   padding-left: 9px;
 }
 
+.critical-position {
+  border-left: 3px solid var(--gold);
+  padding-left: 9px;
+}
+
 .review-list {
   display: grid;
   gap: 8px;

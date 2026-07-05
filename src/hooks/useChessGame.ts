@@ -153,6 +153,18 @@ export interface PostGameReport {
     scoreLabel: string;
     createdAt: string;
   } | null;
+  criticalPosition: {
+    positionId: string;
+    moveId: string | null;
+    ply: number;
+    fen: string;
+    sideToMove: 'white' | 'black';
+    san: string | null;
+    reason: string;
+    bestMove: string | null;
+    scoreLabel: string | null;
+    depth: number | null;
+  } | null;
   tutorFocus: Array<{ label: string; count: number }>;
   recentTutorEvents: Array<{
     id: string;
@@ -212,6 +224,9 @@ export interface ReviewItem {
   positionPly: number | null;
   sideToMove: 'white' | 'black' | null;
   exercisePrompt: string;
+  expectedBestMove: string | null;
+  expectedScoreLabel: string;
+  expectedDepth: number | null;
   dueAt: string;
   intervalDays: number;
   ease: number;
@@ -221,6 +236,10 @@ export interface ReviewItem {
   latestAnswerAssessment: {
     label: 'alineada' | 'requiere detalle';
     matchedTerms: string[];
+    candidateSignal: {
+      expectedMove: string;
+      matched: boolean;
+    } | null;
     wordCount: number;
   } | null;
   createdAt: string;

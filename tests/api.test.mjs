@@ -353,16 +353,26 @@ test('local API builds a post-game report from engine and tutor events', async (
     });
     assert.equal(tutorResponse.status, 201);
 
+    const secondMoveResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/moves`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ from: 'e7', to: 'e5', promotion: 'q' }),
+    });
+    assert.equal(secondMoveResponse.status, 200);
+
     const reportResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/report`);
     assert.equal(reportResponse.status, 200);
     const report = await readJson(reportResponse);
 
-    assert.equal(report.summary.moveCount, 1);
+    assert.equal(report.summary.moveCount, 2);
     assert.equal(report.summary.analyzedPositions, 1);
     assert.equal(report.summary.tutorExplanations, 1);
     assert.equal(report.latestEngine.engineName, 'Report Engine');
     assert.equal(report.latestEngine.bestMove, 'g1f3');
     assert.equal(report.latestEngine.scoreLabel, '+0.42');
+    assert.equal(report.criticalPosition.san, 'e4');
+    assert.equal(report.criticalPosition.bestMove, 'g1f3');
+    assert.equal(report.criticalPosition.scoreLabel, '+0.42');
     assert.equal(report.summary.learningEvents, 0);
     assert.ok(report.tutorFocus.some((focus) => focus.label === 'centro'));
     assert.ok(report.recommendations.some((recommendation) => /centro|aprendizaje|ejercicio/i.test(recommendation)));
@@ -380,6 +390,7 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(learning.learningEvent.skill, 'strategic');
     assert.ok(learning.learningEvent.moveId);
     assert.ok(learning.learningEvent.positionId);
+    assert.equal(learning.learningEvent.positionId, report.criticalPosition.positionId);
     assert.ok(learning.learningEvent.tutorEventId);
     assert.equal(learning.reviewItem.learningEventId, learning.learningEvent.id);
     assert.equal(learning.reviewItem.gameId, created.gameId);
@@ -387,6 +398,9 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.match(learning.reviewItem.exercisePrompt, /Ejercicio dirigido/i);
     assert.equal(learning.reviewItem.positionFen, 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
     assert.equal(learning.reviewItem.sideToMove, 'black');
+    assert.equal(learning.reviewItem.expectedBestMove, 'g1f3');
+    assert.equal(learning.reviewItem.expectedScoreLabel, '+0.42');
+    assert.equal(learning.reviewItem.expectedDepth, 8);
     assert.equal(learning.report.summary.learningEvents, 1);
     assert.equal(learning.report.summary.reviewItems, 1);
 
@@ -404,7 +418,7 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(reviews.reviewItems.length, 1);
     assert.equal(reviews.reviewItems[0].learningEventId, learning.learningEvent.id);
 
-    const answerText = 'Recorde que el centro y la seguridad del rey ordenan la posicion.';
+    const answerText = 'Recorde que el centro y la seguridad del rey ordenan la posicion; candidata g1f3.';
     const reviewResultResponse = await fetch(`${baseUrl}/api/reviews/${learning.reviewItem.id}/result`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -417,6 +431,8 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(reviewResult.reviewItem.masteryState, 'stable');
     assert.equal(reviewResult.reviewItem.latestAnswer, answerText);
     assert.equal(reviewResult.reviewItem.latestAnswerAssessment.label, 'alineada');
+    assert.equal(reviewResult.reviewItem.latestAnswerAssessment.candidateSignal.expectedMove, 'g1f3');
+    assert.equal(reviewResult.reviewItem.latestAnswerAssessment.candidateSignal.matched, true);
     assert.ok(reviewResult.reviewItem.intervalDays >= 2);
 
     const refreshedReviewsResponse = await fetch(`${baseUrl}/api/reviews?gameId=${created.gameId}`);

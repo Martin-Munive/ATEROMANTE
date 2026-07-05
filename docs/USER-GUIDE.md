@@ -113,9 +113,9 @@ The tutor must not validate chess legality. Legal moves, FEN and PGN come from `
 
 Use `Explicar` to ask for a short explanation. The API stores the tutor event so future reports and learning memory can reference it.
 
-The same panel shows an initial `Reporte post-partida` block. It summarizes move count, analyzed positions, tutor explanations, saved learning events, latest engine recommendation, repeated tutor focus and the next review suggestion. Use `Guardar aprendizaje` to convert the current report recommendation into a persisted learning event linked to the game, latest move, latest position and latest tutor event when available.
+The same panel shows an initial `Reporte post-partida` block. It summarizes move count, analyzed positions, tutor explanations, saved learning events, latest engine recommendation, selected critical position, repeated tutor focus and the next review suggestion. Use `Guardar aprendizaje` to convert the current report recommendation into a persisted learning event linked to the game, selected critical move/position and latest tutor event when available.
 
-When the report has review items, ATEROMANTE shows a directed exercise prompt tied to the saved position. Write what you remember or calculate in the review box before grading yourself with `Repetir`, `Difícil`, `Bien` or `Fácil`. ATEROMANTE stores that written attempt, gives a lightweight alignment signal, updates the next review interval and updates the mastery state for that learning event.
+When the report has review items, ATEROMANTE shows a directed exercise prompt tied to the saved position. Write what you remember or calculate in the review box before grading yourself with `Repetir`, `Difícil`, `Bien` or `Fácil`. ATEROMANTE stores that written attempt, gives a lightweight alignment signal, can compare the answer against the saved engine candidate when one exists, updates the next review interval and updates the mastery state for that learning event.
 
 This is the first reporting and learning-memory layer; it is not yet a full weakness map or exercise generator.
 

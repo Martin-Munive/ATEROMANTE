@@ -847,6 +847,10 @@ export class LearningRepository {
         p.fen AS position_fen,
         p.ply AS position_ply,
         p.side_to_move,
+        ee.best_move AS expected_best_move,
+        ee.score_cp AS expected_score_cp,
+        ee.score_mate AS expected_score_mate,
+        ee.depth AS expected_depth,
         (
           SELECT ra.answer_text
           FROM review_attempts ra
@@ -857,6 +861,14 @@ export class LearningRepository {
       FROM review_items ri
       JOIN learning_events le ON le.id = ri.learning_event_id
       LEFT JOIN positions p ON p.id = le.position_id
+      LEFT JOIN engine_evaluations ee ON ee.id = (
+        SELECT latest_ee.id
+        FROM engine_evaluations latest_ee
+        WHERE latest_ee.game_id = le.game_id
+          AND latest_ee.position_id = le.position_id
+        ORDER BY latest_ee.created_at DESC
+        LIMIT 1
+      )
       WHERE ri.id = ?
     `).get(reviewItemId);
   }
@@ -954,6 +966,10 @@ export class LearningRepository {
         p.fen AS position_fen,
         p.ply AS position_ply,
         p.side_to_move,
+        ee.best_move AS expected_best_move,
+        ee.score_cp AS expected_score_cp,
+        ee.score_mate AS expected_score_mate,
+        ee.depth AS expected_depth,
         (
           SELECT ra.answer_text
           FROM review_attempts ra
@@ -964,6 +980,14 @@ export class LearningRepository {
       FROM review_items ri
       JOIN learning_events le ON le.id = ri.learning_event_id
       LEFT JOIN positions p ON p.id = le.position_id
+      LEFT JOIN engine_evaluations ee ON ee.id = (
+        SELECT latest_ee.id
+        FROM engine_evaluations latest_ee
+        WHERE latest_ee.game_id = le.game_id
+          AND latest_ee.position_id = le.position_id
+        ORDER BY latest_ee.created_at DESC
+        LIMIT 1
+      )
       ${where}
       ORDER BY ri.due_at ASC, ri.created_at ASC
       LIMIT ?
