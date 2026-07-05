@@ -293,7 +293,72 @@ function scoreToLabel(evaluation) {
   return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
 }
 
-function selectCriticalReviewSource({ state, evaluations }) {
+function classifyCriticalSignal({ evaluation = null, tutorEventRows = [] } = {}) {
+  if (evaluation) {
+    if (evaluation.score_mate !== null && evaluation.score_mate !== undefined) {
+      return {
+        category: 'mate-threat',
+        categoryLabel: 'secuencia de mate',
+        severity: 'critical',
+        severityLabel: 'critica',
+        signals: [
+          `Mate ${evaluation.score_mate}`,
+          `Candidata ${evaluation.best_move}`,
+          evaluation.depth ? `Profundidad ${evaluation.depth}` : null,
+        ].filter(Boolean),
+      };
+    }
+
+    const magnitude = Math.abs(evaluation.score_cp ?? 0);
+    if (magnitude >= 300) {
+      return {
+        category: 'decisive-engine-signal',
+        categoryLabel: 'ventaja decisiva',
+        severity: 'high',
+        severityLabel: 'alta',
+        signals: [`Motor ${scoreToLabel(evaluation)}`, `Candidata ${evaluation.best_move}`],
+      };
+    }
+    if (magnitude >= 100) {
+      return {
+        category: 'engine-advantage',
+        categoryLabel: 'ventaja de motor',
+        severity: 'medium',
+        severityLabel: 'media',
+        signals: [`Motor ${scoreToLabel(evaluation)}`, `Candidata ${evaluation.best_move}`],
+      };
+    }
+
+    return {
+      category: 'engine-candidate',
+      categoryLabel: 'candidata de motor',
+      severity: 'low',
+      severityLabel: 'baja',
+      signals: [`Motor ${scoreToLabel(evaluation)}`, `Candidata ${evaluation.best_move}`],
+    };
+  }
+
+  if (tutorEventRows.length > 0) {
+    const focus = tutorEventRows[0].teaching_focus?.[0] ?? 'revision';
+    return {
+      category: 'tutor-focus',
+      categoryLabel: 'foco de tutor',
+      severity: 'medium',
+      severityLabel: 'media',
+      signals: [`Foco ${focus}`],
+    };
+  }
+
+  return {
+    category: 'needs-analysis',
+    categoryLabel: 'requiere analisis',
+    severity: 'low',
+    severityLabel: 'baja',
+    signals: ['Sin motor guardado'],
+  };
+}
+
+function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] }) {
   const positionsById = new Map(state.positions.map((position) => [position.id, position]));
   const movesById = new Map(state.moves.map((move) => [move.id, move]));
   const evaluatedCandidates = evaluations
@@ -318,22 +383,26 @@ function selectCriticalReviewSource({ state, evaluations }) {
 
   const selected = evaluatedCandidates[0] ?? null;
   if (selected) {
+    const classification = classifyCriticalSignal({ evaluation: selected.evaluation, tutorEventRows });
     return {
       position: selected.position,
       move: selected.move,
       evaluation: selected.evaluation,
+      classification,
       reason: selected.scoreMagnitude >= 100_000
         ? 'Evaluacion con secuencia de mate detectada por el motor.'
         : `Mayor tension evaluada por motor: ${scoreToLabel(selected.evaluation)}.`,
     };
   }
 
+  const classification = classifyCriticalSignal({ tutorEventRows });
   return {
     position: state.positions.at(-1) ?? null,
     move: state.moves.at(-1) ?? null,
     evaluation: null,
+    classification,
     reason: evaluations.length === 0
-      ? 'Sin analisis de motor; se usa la posicion actual como punto de repaso.'
+      ? `${classification.categoryLabel}; se usa la posicion actual como punto de repaso.`
       : 'No se encontro una evaluacion vinculada a posicion; se usa la posicion actual.',
   };
 }
@@ -354,7 +423,7 @@ function buildPostGameReport({
 
   const tutorEvents = tutorEventRows.map(serializeTutorEvent);
   const latestEvaluation = evaluations[0] ?? null;
-  const criticalSource = selectCriticalReviewSource({ state, evaluations });
+  const criticalSource = selectCriticalReviewSource({ state, evaluations, tutorEventRows });
   const recommendations = [];
 
   if (evaluations.length === 0) {
@@ -405,6 +474,11 @@ function buildPostGameReport({
           bestMove: criticalSource.evaluation?.best_move ?? null,
           scoreLabel: criticalSource.evaluation ? scoreToLabel(criticalSource.evaluation) : null,
           depth: criticalSource.evaluation?.depth ?? null,
+          category: criticalSource.classification.category,
+          categoryLabel: criticalSource.classification.categoryLabel,
+          severity: criticalSource.classification.severity,
+          severityLabel: criticalSource.classification.severityLabel,
+          signals: criticalSource.classification.signals,
         }
       : null,
     tutorFocus: [...focusCounts.entries()]
@@ -621,7 +695,7 @@ export function createAteromanteApiServer({
           learningEventRows: learningEvents.listByGame(gameId),
           reviewItemRows: learningEvents.listReviewItems({ gameId, limit: 10 }),
         });
-        const criticalSource = selectCriticalReviewSource({ state, evaluations });
+        const criticalSource = selectCriticalReviewSource({ state, evaluations, tutorEventRows });
         const sourceMove = criticalSource.move ?? state.moves.at(-1) ?? null;
         const sourcePosition = criticalSource.position ?? state.positions.at(-1) ?? null;
         const latestTutorEvent = tutorEventRows[0] ?? null;

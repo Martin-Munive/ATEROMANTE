@@ -29,6 +29,7 @@
 - Store first learning event from post-game report.
 - Generate directed review exercise prompts from saved positions.
 - Select critical positions automatically from stored engine evaluations.
+- Classify critical positions by engine/tutor signal and severity.
 - Link every learning event to game, move and position.
 - Search lessons by opening, theme, mistake and position.
 

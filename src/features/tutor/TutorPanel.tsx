@@ -165,6 +165,10 @@ export function TutorPanel({ game }: TutorPanelProps) {
                   : `ply ${game.postGameReport.criticalPosition.ply}`}
                 {' · '}
                 {game.postGameReport.criticalPosition.reason}
+                {' · '}
+                {game.postGameReport.criticalPosition.categoryLabel}
+                {' · '}
+                {`severidad ${game.postGameReport.criticalPosition.severityLabel}`}
               </p>
             )}
             {game.postGameReport.tutorFocus.length > 0 && (

@@ -373,6 +373,9 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(report.criticalPosition.san, 'e4');
     assert.equal(report.criticalPosition.bestMove, 'g1f3');
     assert.equal(report.criticalPosition.scoreLabel, '+0.42');
+    assert.equal(report.criticalPosition.category, 'engine-candidate');
+    assert.equal(report.criticalPosition.severity, 'low');
+    assert.ok(report.criticalPosition.signals.some((signal) => signal.includes('g1f3')));
     assert.equal(report.summary.learningEvents, 0);
     assert.ok(report.tutorFocus.some((focus) => focus.label === 'centro'));
     assert.ok(report.recommendations.some((recommendation) => /centro|aprendizaje|ejercicio/i.test(recommendation)));

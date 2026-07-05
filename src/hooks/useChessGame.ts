@@ -164,6 +164,11 @@ export interface PostGameReport {
     bestMove: string | null;
     scoreLabel: string | null;
     depth: number | null;
+    category: string;
+    categoryLabel: string;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    severityLabel: string;
+    signals: string[];
   } | null;
   tutorFocus: Array<{ label: string; count: number }>;
   recentTutorEvents: Array<{
