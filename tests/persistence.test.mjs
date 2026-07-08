@@ -220,6 +220,13 @@ test('learning events can be traced back to the source position', () => {
   assert.equal(result.latest_answer, 'Debo ocupar el centro antes de jugar por el flanco.');
   assert.equal(result.last_result, 'good');
 
+  const traceResults = learning.searchLearningTrace({ query: 'centro', gameId: game.id });
+  assert.equal(traceResults.length, 1);
+  assert.equal(traceResults[0].id, lesson.id);
+  assert.equal(traceResults[0].position_fen, STANDARD_STARTING_FEN);
+  assert.equal(traceResults[0].review_item_id, review.id);
+  assert.equal(traceResults[0].latest_answer, 'Debo ocupar el centro antes de jugar por el flanco.');
+
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));
   assert.ok(sessionEvents.some((event) => event.event_type === 'review.item.answered'));

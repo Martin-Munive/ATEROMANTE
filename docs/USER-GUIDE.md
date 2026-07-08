@@ -113,9 +113,11 @@ The tutor must not validate chess legality. Legal moves, FEN and PGN come from `
 
 Use `Explicar` to ask for a short explanation. The API stores the tutor event so future reports and learning memory can reference it.
 
-The same panel shows an initial `Reporte post-partida` block. It summarizes move count, analyzed positions, tutor explanations, saved learning events, latest engine recommendation, selected critical position with category/severity, repeated tutor focus and the next review suggestion. Use `Guardar aprendizaje` to convert the current report recommendation into a persisted learning event linked to the game, selected critical move/position and latest tutor event when available.
+The same panel shows an initial `Reporte post-partida` block. It summarizes move count, analyzed positions, tutor explanations, saved learning events, latest engine recommendation, prioritized critical positions with category/severity, repeated tutor focus and the next review suggestion. Use `Guardar aprendizaje` to convert the current report recommendation into a persisted learning event linked to the game, highest-priority critical move/position and latest tutor event when available.
 
 When the report has review items, ATEROMANTE shows a directed exercise prompt tied to the saved position. Write what you remember or calculate in the review box before grading yourself with `Repetir`, `Difícil`, `Bien` or `Fácil`. ATEROMANTE stores that written attempt, gives a lightweight alignment signal, can compare the answer against the saved engine candidate when one exists, updates the next review interval and updates the mastery state for that learning event.
+
+Use `Buscar aprendizaje` to recover saved learning traces by theme, tutor explanation text, SAN move, FEN fragment or engine candidate. This is the first local answer to "where did I learn this?" and only searches the local SQLite learning memory.
 
 This is the first reporting and learning-memory layer; it is not yet a full weakness map or exercise generator.
 

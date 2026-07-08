@@ -72,6 +72,7 @@ GET  /api/games/:gameId
 GET  /api/games/:gameId/report
 GET  /api/games/:gameId/export/pgn
 GET  /api/reviews
+GET  /api/learning/search
 POST /api/games/:gameId/learning/from-report
 POST /api/reviews/:reviewItemId/result
 POST /api/games/:gameId/variations/:variationIndex/study
@@ -185,12 +186,13 @@ Important tables:
 2. The API rebuilds deterministic game state through `GameService`.
 3. `EngineEvaluationRepository` returns stored engine analyses for the game.
 4. `TutorEventRepository` returns stored tutor explanations for the game.
-5. The API returns a compact report with move count, analyzed positions, tutor explanation count, latest engine recommendation, selected critical position, its category/severity signals, repeated tutor focus and next review suggestions.
+5. The API returns a compact report with move count, analyzed positions, tutor explanation count, latest engine recommendation, prioritized critical positions, their category/severity signals, repeated tutor focus and next review suggestions.
 6. The tutor panel renders the report as a first local review layer.
-7. The UI can call `POST /api/games/:gameId/learning/from-report` to persist the top report recommendation as a `learning_events` row linked to the selected critical move/position and latest tutor event when available.
+7. The UI can call `POST /api/games/:gameId/learning/from-report` to persist the top report recommendation as a `learning_events` row linked to the highest-priority critical move/position and latest tutor event when available.
 8. Review items include the linked position FEN, ply, side to move, latest engine candidate when available and an API-built exercise prompt for directed recall.
 9. The review queue can call `POST /api/reviews/:reviewItemId/result` with `again`, `hard`, `good` or `easy` plus optional `answerText` to store the learner's written recall before grading.
 10. The API updates the next due date, ease and mastery state, stores the written attempt in `review_attempts`, and returns a lightweight answer assessment based on expected theme/summary terms plus optional engine-candidate mention.
+11. The UI can call `GET /api/learning/search?q=<term>&gameId=<id>` to recover learning traces by theme, explanation, SAN move, FEN or stored engine candidate.
 
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.
@@ -265,6 +267,7 @@ Implemented baseline:
 - `POST /api/games/:gameId/tutor/explain`;
 - `GET /api/games/:gameId/report`;
 - `POST /api/games/:gameId/learning/from-report`;
+- `GET /api/learning/search`;
 - `TutorEventRepository`;
 - `TutorEventRepository.listByGame()`;
 - API-side `mock-local` provider;

@@ -778,6 +778,85 @@ export class LearningRepository {
       .all(...values);
   }
 
+  searchLearningTrace({ query = '', gameId = null, limit = 8 } = {}) {
+    const normalizedQuery = typeof query === 'string' ? query.trim().slice(0, 120) : '';
+    const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 25 ? limit : 8;
+    const clauses = [];
+    const values = [];
+
+    if (gameId) {
+      clauses.push('le.game_id = ?');
+      values.push(gameId);
+    }
+
+    if (normalizedQuery) {
+      const likeQuery = `%${normalizedQuery.toLowerCase()}%`;
+      clauses.push(`(
+        LOWER(le.theme) LIKE ?
+        OR LOWER(le.skill) LIKE ?
+        OR LOWER(le.summary) LIKE ?
+        OR LOWER(le.explanation) LIKE ?
+        OR LOWER(COALESCE(te.summary, '')) LIKE ?
+        OR LOWER(COALESCE(m.san, '')) LIKE ?
+        OR LOWER(COALESCE(p.fen, '')) LIKE ?
+        OR LOWER(COALESCE(ee.best_move, '')) LIKE ?
+        OR EXISTS (
+          SELECT 1
+          FROM review_attempts search_ra
+          JOIN review_items search_ri ON search_ri.id = search_ra.review_item_id
+          WHERE search_ri.learning_event_id = le.id
+            AND LOWER(search_ra.answer_text) LIKE ?
+        )
+      )`);
+      values.push(likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery);
+    }
+
+    values.push(boundedLimit);
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+
+    return this.db.prepare(`
+      SELECT
+        le.*,
+        m.san AS move_san,
+        m.ply AS move_ply,
+        p.fen AS position_fen,
+        p.ply AS position_ply,
+        p.side_to_move,
+        te.summary AS tutor_summary,
+        te.teaching_focus_json AS tutor_focus_json,
+        ee.best_move AS expected_best_move,
+        ee.score_cp AS expected_score_cp,
+        ee.score_mate AS expected_score_mate,
+        ee.depth AS expected_depth,
+        ri.id AS review_item_id,
+        ri.due_at AS review_due_at,
+        ri.last_result AS review_last_result,
+        (
+          SELECT ra.answer_text
+          FROM review_attempts ra
+          WHERE ra.review_item_id = ri.id
+          ORDER BY ra.created_at DESC
+          LIMIT 1
+        ) AS latest_answer
+      FROM learning_events le
+      LEFT JOIN moves m ON m.id = le.move_id
+      LEFT JOIN positions p ON p.id = le.position_id
+      LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
+      LEFT JOIN review_items ri ON ri.learning_event_id = le.id
+      LEFT JOIN engine_evaluations ee ON ee.id = (
+        SELECT latest_ee.id
+        FROM engine_evaluations latest_ee
+        WHERE latest_ee.game_id = le.game_id
+          AND latest_ee.position_id = le.position_id
+        ORDER BY latest_ee.created_at DESC
+        LIMIT 1
+      )
+      ${where}
+      ORDER BY le.created_at DESC
+      LIMIT ?
+    `).all(...values);
+  }
+
   listByGame(gameId) {
     return this.db
       .prepare('SELECT * FROM learning_events WHERE game_id = ? ORDER BY created_at DESC')

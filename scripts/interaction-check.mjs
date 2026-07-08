@@ -33,13 +33,28 @@ async function waitForServer(timeoutMs = 30000) {
   throw new Error(`Vite server did not respond at ${url}`);
 }
 
-function stopProcessTree(processRef) {
+async function stopProcessTree(processRef) {
   if (!processRef.pid || processRef.killed) return;
+  const processExit = new Promise((resolveExit) => {
+    processRef.once('exit', resolveExit);
+  });
   if (process.platform === 'win32') {
-    spawn('taskkill', ['/pid', String(processRef.pid), '/T', '/F'], { stdio: 'ignore' });
+    const taskkill = spawn('taskkill', ['/pid', String(processRef.pid), '/T', '/F'], { stdio: 'ignore' });
+    await new Promise((resolveKill) => {
+      taskkill.once('exit', resolveKill);
+      taskkill.once('error', resolveKill);
+    });
+    await Promise.race([
+      processExit,
+      new Promise((resolveDelay) => setTimeout(resolveDelay, 2000)),
+    ]);
     return;
   }
   processRef.kill('SIGTERM');
+  await Promise.race([
+    processExit,
+    new Promise((resolveDelay) => setTimeout(resolveDelay, 2000)),
+  ]);
 }
 
 async function launchBrowser() {
@@ -124,6 +139,10 @@ async function main() {
     await page.getByRole('button', { name: 'Fácil' }).click();
     await page.getByText('estable · Fácil', { exact: false }).waitFor();
     await page.getByText('Respuesta alineada', { exact: false }).waitFor();
+    await page.getByLabel('Buscar aprendizaje').fill('centro');
+    await page.getByRole('button', { name: 'Buscar' }).click();
+    await page.locator('.trace-results').getByText('centro', { exact: false }).waitFor();
+    await page.locator('.trace-results').getByText('foco de tutor', { exact: false }).waitFor();
     await page.screenshot({ path: resolve(artifactsDir, 'interaction-e2e4.png'), fullPage: true });
 
     const importedFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';
@@ -200,7 +219,7 @@ async function main() {
     console.log(`pgn_import_artifact=${resolve(artifactsDir, 'interaction-pgn-import.png')}`);
     console.log(`pgn_export_artifact=${resolve(artifactsDir, 'interaction-exported-training-match.pgn')}`);
   } finally {
-    stopProcessTree(server);
+    await stopProcessTree(server);
     if (serverOutput.length > 0) {
       console.log('vite_output_start');
       console.log(serverOutput.join('').trim());

@@ -8,10 +8,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const artifactsDir = resolve(projectRoot, 'qa-artifacts');
 const port = process.env.PORT ?? '5175';
+const apiPort = process.env.ATEROMANTE_API_PORT ?? '4175';
+const apiBaseUrl = process.env.VITE_API_BASE_URL ?? `http://127.0.0.1:${apiPort}`;
 const url = `http://127.0.0.1:${port}`;
 
 if (!/^\d{2,5}$/.test(port)) {
   throw new Error(`Invalid PORT value: ${port}`);
+}
+
+if (!/^\d{2,5}$/.test(apiPort)) {
+  throw new Error(`Invalid ATEROMANTE_API_PORT value: ${apiPort}`);
 }
 
 async function waitForServer(timeoutMs = 30000) {
@@ -27,13 +33,28 @@ async function waitForServer(timeoutMs = 30000) {
   throw new Error(`Vite server did not respond at ${url}`);
 }
 
-function stopProcessTree(processRef) {
+async function stopProcessTree(processRef) {
   if (!processRef.pid || processRef.killed) return;
+  const processExit = new Promise((resolveExit) => {
+    processRef.once('exit', resolveExit);
+  });
   if (process.platform === 'win32') {
-    spawn('taskkill', ['/pid', String(processRef.pid), '/T', '/F'], { stdio: 'ignore' });
+    const taskkill = spawn('taskkill', ['/pid', String(processRef.pid), '/T', '/F'], { stdio: 'ignore' });
+    await new Promise((resolveKill) => {
+      taskkill.once('exit', resolveKill);
+      taskkill.once('error', resolveKill);
+    });
+    await Promise.race([
+      processExit,
+      new Promise((resolveDelay) => setTimeout(resolveDelay, 2000)),
+    ]);
     return;
   }
   processRef.kill('SIGTERM');
+  await Promise.race([
+    processExit,
+    new Promise((resolveDelay) => setTimeout(resolveDelay, 2000)),
+  ]);
 }
 
 async function main() {
@@ -51,9 +72,9 @@ async function main() {
       ...process.env,
       BROWSER: 'none',
       PORT: port,
-      ATEROMANTE_API_PORT: '4175',
+      ATEROMANTE_API_PORT: apiPort,
       ATEROMANTE_DB_PATH: ':memory:',
-      VITE_API_BASE_URL: 'http://127.0.0.1:4175',
+      VITE_API_BASE_URL: apiBaseUrl,
     },
   });
   server.stdout.on('data', (chunk) => serverOutput.push(chunk.toString()));
@@ -82,7 +103,7 @@ async function main() {
     await browser.close();
     console.log(`visual_artifacts=${artifactsDir}`);
   } finally {
-    stopProcessTree(server);
+    await stopProcessTree(server);
     if (serverOutput.length > 0) {
       console.log('vite_output_start');
       console.log(serverOutput.join('').trim());

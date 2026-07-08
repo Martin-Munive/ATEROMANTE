@@ -279,6 +279,44 @@ function serializeReviewItem(row) {
   };
 }
 
+function serializeLearningTrace(row) {
+  const focus = row.tutor_focus_json ? JSON.parse(row.tutor_focus_json) : [];
+  const expectedScoreLabel = row.expected_score_mate !== null && row.expected_score_mate !== undefined
+    ? `M${row.expected_score_mate}`
+    : row.expected_score_cp !== null && row.expected_score_cp !== undefined
+      ? `${row.expected_score_cp >= 0 ? '+' : ''}${(row.expected_score_cp / 100).toFixed(2)}`
+      : null;
+
+  return {
+    id: row.id,
+    gameId: row.game_id,
+    moveId: row.move_id,
+    positionId: row.position_id,
+    reviewItemId: row.review_item_id ?? null,
+    eventType: row.event_type,
+    theme: row.theme,
+    skill: row.skill,
+    summary: row.summary,
+    explanation: row.explanation,
+    confidence: row.confidence,
+    masteryState: row.mastery_state,
+    createdAt: row.created_at,
+    moveSan: row.move_san ?? null,
+    movePly: row.move_ply ?? null,
+    positionFen: row.position_fen ?? null,
+    positionPly: row.position_ply ?? null,
+    sideToMove: row.side_to_move ?? null,
+    tutorSummary: row.tutor_summary ?? null,
+    tutorFocus: focus,
+    expectedBestMove: row.expected_best_move ?? null,
+    expectedScoreLabel,
+    expectedDepth: row.expected_depth ?? null,
+    reviewDueAt: row.review_due_at ?? null,
+    reviewLastResult: row.review_last_result ?? null,
+    latestAnswer: row.latest_answer ?? null,
+  };
+}
+
 function scoreToLabel(evaluation) {
   if (!evaluation) {
     return 'Sin evaluacion';
@@ -358,7 +396,31 @@ function classifyCriticalSignal({ evaluation = null, tutorEventRows = [] } = {})
   };
 }
 
-function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] }) {
+function serializeCriticalSource(source) {
+  if (!source?.position) {
+    return null;
+  }
+
+  return {
+    positionId: source.position.id,
+    moveId: source.move?.id ?? null,
+    ply: source.position.ply,
+    fen: source.position.fen,
+    sideToMove: source.position.side_to_move,
+    san: source.move?.san ?? null,
+    reason: source.reason,
+    bestMove: source.evaluation?.best_move ?? null,
+    scoreLabel: source.evaluation ? scoreToLabel(source.evaluation) : null,
+    depth: source.evaluation?.depth ?? null,
+    category: source.classification.category,
+    categoryLabel: source.classification.categoryLabel,
+    severity: source.classification.severity,
+    severityLabel: source.classification.severityLabel,
+    signals: source.classification.signals,
+  };
+}
+
+function selectCriticalReviewSources({ state, evaluations, tutorEventRows = [], limit = 3 }) {
   const positionsById = new Map(state.positions.map((position) => [position.id, position]));
   const movesById = new Map(state.moves.map((move) => [move.id, move]));
   const evaluatedCandidates = evaluations
@@ -381,8 +443,7 @@ function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] })
     .filter(Boolean)
     .sort((a, b) => b.scoreMagnitude - a.scoreMagnitude || String(b.evaluation.created_at).localeCompare(a.evaluation.created_at));
 
-  const selected = evaluatedCandidates[0] ?? null;
-  if (selected) {
+  const selectedSources = evaluatedCandidates.slice(0, limit).map((selected) => {
     const classification = classifyCriticalSignal({ evaluation: selected.evaluation, tutorEventRows });
     return {
       position: selected.position,
@@ -393,10 +454,14 @@ function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] })
         ? 'Evaluacion con secuencia de mate detectada por el motor.'
         : `Mayor tension evaluada por motor: ${scoreToLabel(selected.evaluation)}.`,
     };
+  });
+
+  if (selectedSources.length > 0) {
+    return selectedSources;
   }
 
   const classification = classifyCriticalSignal({ tutorEventRows });
-  return {
+  return [{
     position: state.positions.at(-1) ?? null,
     move: state.moves.at(-1) ?? null,
     evaluation: null,
@@ -404,7 +469,11 @@ function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] })
     reason: evaluations.length === 0
       ? `${classification.categoryLabel}; se usa la posicion actual como punto de repaso.`
       : 'No se encontro una evaluacion vinculada a posicion; se usa la posicion actual.',
-  };
+  }];
+}
+
+function selectCriticalReviewSource({ state, evaluations, tutorEventRows = [] }) {
+  return selectCriticalReviewSources({ state, evaluations, tutorEventRows, limit: 1 })[0];
 }
 
 function buildPostGameReport({
@@ -423,7 +492,8 @@ function buildPostGameReport({
 
   const tutorEvents = tutorEventRows.map(serializeTutorEvent);
   const latestEvaluation = evaluations[0] ?? null;
-  const criticalSource = selectCriticalReviewSource({ state, evaluations, tutorEventRows });
+  const criticalSources = selectCriticalReviewSources({ state, evaluations, tutorEventRows, limit: 3 });
+  const criticalSource = criticalSources[0];
   const recommendations = [];
 
   if (evaluations.length === 0) {
@@ -462,25 +532,8 @@ function buildPostGameReport({
           createdAt: latestEvaluation.created_at,
         }
       : null,
-    criticalPosition: criticalSource.position
-      ? {
-          positionId: criticalSource.position.id,
-          moveId: criticalSource.move?.id ?? null,
-          ply: criticalSource.position.ply,
-          fen: criticalSource.position.fen,
-          sideToMove: criticalSource.position.side_to_move,
-          san: criticalSource.move?.san ?? null,
-          reason: criticalSource.reason,
-          bestMove: criticalSource.evaluation?.best_move ?? null,
-          scoreLabel: criticalSource.evaluation ? scoreToLabel(criticalSource.evaluation) : null,
-          depth: criticalSource.evaluation?.depth ?? null,
-          category: criticalSource.classification.category,
-          categoryLabel: criticalSource.classification.categoryLabel,
-          severity: criticalSource.classification.severity,
-          severityLabel: criticalSource.classification.severityLabel,
-          signals: criticalSource.classification.signals,
-        }
-      : null,
+    criticalPosition: serializeCriticalSource(criticalSource),
+    criticalPositions: criticalSources.map(serializeCriticalSource).filter(Boolean),
     tutorFocus: [...focusCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
@@ -650,6 +703,17 @@ export function createAteromanteApiServer({
         const limit = Number.parseInt(url.searchParams.get('limit') ?? '10', 10);
         sendJson(response, 200, {
           reviewItems: learningEvents.listReviewItems({ gameId, limit }).map(serializeReviewItem),
+        });
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/learning/search') {
+        const query = url.searchParams.get('q') ?? '';
+        const gameId = url.searchParams.get('gameId');
+        const limit = Number.parseInt(url.searchParams.get('limit') ?? '8', 10);
+        sendJson(response, 200, {
+          query: query.trim(),
+          results: learningEvents.searchLearningTrace({ query, gameId, limit }).map(serializeLearningTrace),
         });
         return;
       }

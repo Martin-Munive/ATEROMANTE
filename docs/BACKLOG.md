@@ -30,8 +30,9 @@
 - Generate directed review exercise prompts from saved positions.
 - Select critical positions automatically from stored engine evaluations.
 - Classify critical positions by engine/tutor signal and severity.
+- Display a prioritized short list of critical positions in the review report.
 - Link every learning event to game, move and position.
-- Search lessons by opening, theme, mistake and position.
+- Search saved lessons by theme, explanation text, move, FEN fragment and engine candidate.
 
 ## MVP 1.5 - Traceability And Search
 - Normalize richer PGN source metadata.
@@ -40,7 +41,7 @@
 - Add FTS search for tutor explanations and notes.
 - Add review queue from learning events.
 - Record basic review results, written attempts, lightweight answer alignment and engine-candidate mention.
-- Build "where did I learn this?" retrieval.
+- Expand "where did I learn this?" retrieval with openings, richer tags and position hashes.
 
 ## MVP 2 - Local Training Game
 - Play against engine inside the app.

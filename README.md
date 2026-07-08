@@ -64,7 +64,7 @@ Las partidas humano-humano asistidas son solo para entrenamiento consentido. La 
 
 ## Estado Del Proyecto
 
-Estado actual: **spike tecnico inicial**.
+Estado actual: **MVP educativo local en progreso**.
 
 Implementado:
 
@@ -98,16 +98,20 @@ Implementado:
 - exportacion PGN enriquecida con headers, comentarios, NAGs y variantes preservadas;
 - reporte post-partida inicial desde jugadas, evaluaciones del motor y explicaciones del tutor;
 - conversion del reporte post-partida en eventos de aprendizaje persistidos y trazables;
+- lista priorizada de posiciones criticas para repaso dentro del reporte;
+- ejercicios dirigidos desde posiciones guardadas;
+- cola de repaso con intento escrito, autoevaluacion, senal ligera de alineacion y proxima fecha;
+- busqueda local de trazabilidad para responder donde se aprendio un tema, jugada candidata o posicion;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
 - QA visual con Playwright;
 - build y lint funcionales.
 
-Pendiente:
+Pendiente inmediato:
 
 - soporte PGN avanzado: edicion de variantes y metadatos de fuente enriquecidos para conectores;
-- calidad pedagogica del tutor con modelos reales y memoria de aprendizaje;
+- calidad pedagogica del tutor con modelos reales;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
 
@@ -238,9 +242,9 @@ El sistema debe responder con la partida, posicion, explicacion, variantes y eje
 3. Expandir SQLite para importacion PGN, revisiones y reportes.
 4. Ampliar importacion/exportacion PGN.
 5. Ampliar reportes post-partida hacia diagnostico, memoria y ejercicios.
-6. Agregar tutor LLM configurable por API.
+6. Mejorar tutor LLM configurable por API.
 7. Prototipar servidor/moderador.
-8. Agregar busqueda por temas, aperturas y posiciones.
+8. Ampliar busqueda por aperturas, posiciones y conectores.
 
 ## Autor
 

@@ -786,9 +786,57 @@ button {
   padding-left: 9px;
 }
 
+.trace-search {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.trace-search label {
+  color: var(--gold-2);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.trace-search div {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.trace-search input {
+  background: #20231f;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text);
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.trace-results p {
+  margin: 5px 0;
+}
+
 .critical-position {
   border-left: 3px solid var(--gold);
   padding-left: 9px;
+}
+
+.critical-list {
+  display: grid;
+  gap: 5px;
+  margin: -2px 0 8px;
+  padding-left: 18px;
+}
+
+.critical-list li {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.critical-list strong {
+  color: var(--gold-2);
 }
 
 .review-list {

@@ -310,8 +310,23 @@ test('local API lists tutor providers and stores tutor explanations', async () =
 });
 
 test('local API builds a post-game report from engine and tutor events', async () => {
+  let analysisCount = 0;
   const engineService = {
     async analyze() {
+      analysisCount += 1;
+      if (analysisCount === 2) {
+        return {
+          engineName: 'Report Engine',
+          depth: 9,
+          multipv: 1,
+          scoreCp: 320,
+          scoreMate: null,
+          bestMove: 'd2d4',
+          principalVariation: ['d2d4', 'e5d4'],
+          perspective: 'side-to-move',
+        };
+      }
+
       return {
         engineName: 'Report Engine',
         depth: 8,
@@ -360,22 +375,31 @@ test('local API builds a post-game report from engine and tutor events', async (
     });
     assert.equal(secondMoveResponse.status, 200);
 
+    const secondAnalysisResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/analysis`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ depth: 9 }),
+    });
+    assert.equal(secondAnalysisResponse.status, 201);
+
     const reportResponse = await fetch(`${baseUrl}/api/games/${created.gameId}/report`);
     assert.equal(reportResponse.status, 200);
     const report = await readJson(reportResponse);
 
     assert.equal(report.summary.moveCount, 2);
-    assert.equal(report.summary.analyzedPositions, 1);
+    assert.equal(report.summary.analyzedPositions, 2);
     assert.equal(report.summary.tutorExplanations, 1);
     assert.equal(report.latestEngine.engineName, 'Report Engine');
-    assert.equal(report.latestEngine.bestMove, 'g1f3');
-    assert.equal(report.latestEngine.scoreLabel, '+0.42');
-    assert.equal(report.criticalPosition.san, 'e4');
-    assert.equal(report.criticalPosition.bestMove, 'g1f3');
-    assert.equal(report.criticalPosition.scoreLabel, '+0.42');
-    assert.equal(report.criticalPosition.category, 'engine-candidate');
-    assert.equal(report.criticalPosition.severity, 'low');
-    assert.ok(report.criticalPosition.signals.some((signal) => signal.includes('g1f3')));
+    assert.equal(report.latestEngine.bestMove, 'd2d4');
+    assert.equal(report.latestEngine.scoreLabel, '+3.20');
+    assert.equal(report.criticalPosition.san, 'e5');
+    assert.equal(report.criticalPosition.bestMove, 'd2d4');
+    assert.equal(report.criticalPosition.scoreLabel, '+3.20');
+    assert.equal(report.criticalPosition.category, 'decisive-engine-signal');
+    assert.equal(report.criticalPosition.severity, 'high');
+    assert.equal(report.criticalPositions.length, 2);
+    assert.equal(report.criticalPositions[1].san, 'e4');
+    assert.ok(report.criticalPosition.signals.some((signal) => signal.includes('d2d4')));
     assert.equal(report.summary.learningEvents, 0);
     assert.ok(report.tutorFocus.some((focus) => focus.label === 'centro'));
     assert.ok(report.recommendations.some((recommendation) => /centro|aprendizaje|ejercicio/i.test(recommendation)));
@@ -399,11 +423,11 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(learning.reviewItem.gameId, created.gameId);
     assert.equal(learning.reviewItem.nextPromptType, 'position-recall');
     assert.match(learning.reviewItem.exercisePrompt, /Ejercicio dirigido/i);
-    assert.equal(learning.reviewItem.positionFen, 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    assert.equal(learning.reviewItem.sideToMove, 'black');
-    assert.equal(learning.reviewItem.expectedBestMove, 'g1f3');
-    assert.equal(learning.reviewItem.expectedScoreLabel, '+0.42');
-    assert.equal(learning.reviewItem.expectedDepth, 8);
+    assert.equal(learning.reviewItem.positionFen, 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    assert.equal(learning.reviewItem.sideToMove, 'white');
+    assert.equal(learning.reviewItem.expectedBestMove, 'd2d4');
+    assert.equal(learning.reviewItem.expectedScoreLabel, '+3.20');
+    assert.equal(learning.reviewItem.expectedDepth, 9);
     assert.equal(learning.report.summary.learningEvents, 1);
     assert.equal(learning.report.summary.reviewItems, 1);
 
@@ -421,7 +445,7 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(reviews.reviewItems.length, 1);
     assert.equal(reviews.reviewItems[0].learningEventId, learning.learningEvent.id);
 
-    const answerText = 'Recorde que el centro y la seguridad del rey ordenan la posicion; candidata g1f3.';
+    const answerText = 'Recorde que el centro y la seguridad del rey ordenan la posicion; candidata d2d4.';
     const reviewResultResponse = await fetch(`${baseUrl}/api/reviews/${learning.reviewItem.id}/result`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -434,7 +458,7 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(reviewResult.reviewItem.masteryState, 'stable');
     assert.equal(reviewResult.reviewItem.latestAnswer, answerText);
     assert.equal(reviewResult.reviewItem.latestAnswerAssessment.label, 'alineada');
-    assert.equal(reviewResult.reviewItem.latestAnswerAssessment.candidateSignal.expectedMove, 'g1f3');
+    assert.equal(reviewResult.reviewItem.latestAnswerAssessment.candidateSignal.expectedMove, 'd2d4');
     assert.equal(reviewResult.reviewItem.latestAnswerAssessment.candidateSignal.matched, true);
     assert.ok(reviewResult.reviewItem.intervalDays >= 2);
 
@@ -443,6 +467,16 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(refreshedReviews.reviewItems[0].lastResult, 'easy');
     assert.equal(refreshedReviews.reviewItems[0].masteryState, 'stable');
     assert.equal(refreshedReviews.reviewItems[0].latestAnswer, answerText);
+
+    const traceResponse = await fetch(`${baseUrl}/api/learning/search?gameId=${created.gameId}&q=d2d4`);
+    assert.equal(traceResponse.status, 200);
+    const trace = await readJson(traceResponse);
+    assert.equal(trace.query, 'd2d4');
+    assert.equal(trace.results.length, 1);
+    assert.equal(trace.results[0].id, learning.learningEvent.id);
+    assert.equal(trace.results[0].expectedBestMove, 'd2d4');
+    assert.equal(trace.results[0].latestAnswer, answerText);
+    assert.equal(trace.results[0].positionFen, learning.reviewItem.positionFen);
   }, { engineService });
 });
 

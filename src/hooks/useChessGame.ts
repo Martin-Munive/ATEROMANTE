@@ -153,7 +153,24 @@ export interface PostGameReport {
     scoreLabel: string;
     createdAt: string;
   } | null;
-  criticalPosition: {
+  criticalPosition: CriticalPosition | null;
+  criticalPositions: CriticalPosition[];
+  tutorFocus: Array<{ label: string; count: number }>;
+  recentTutorEvents: Array<{
+    id: string;
+    providerId: string;
+    tutorMode: string;
+    summary: string;
+    teachingFocus: string[];
+    confidence: 'low' | 'medium' | 'high';
+    createdAt: string;
+  }>;
+  recentLearningEvents: LearningEvent[];
+  reviewQueue: ReviewItem[];
+  recommendations: string[];
+}
+
+export interface CriticalPosition {
     positionId: string;
     moveId: string | null;
     ply: number;
@@ -169,20 +186,6 @@ export interface PostGameReport {
     severity: 'critical' | 'high' | 'medium' | 'low';
     severityLabel: string;
     signals: string[];
-  } | null;
-  tutorFocus: Array<{ label: string; count: number }>;
-  recentTutorEvents: Array<{
-    id: string;
-    providerId: string;
-    tutorMode: string;
-    summary: string;
-    teachingFocus: string[];
-    confidence: 'low' | 'medium' | 'high';
-    createdAt: string;
-  }>;
-  recentLearningEvents: LearningEvent[];
-  reviewQueue: ReviewItem[];
-  recommendations: string[];
 }
 
 export interface LearningEvent {
@@ -249,6 +252,40 @@ export interface ReviewItem {
   } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LearningTraceResult {
+  id: string;
+  gameId: string;
+  moveId: string | null;
+  positionId: string | null;
+  reviewItemId: string | null;
+  eventType: string;
+  theme: string;
+  skill: string;
+  summary: string;
+  explanation: string;
+  confidence: 'low' | 'medium' | 'high';
+  masteryState: 'new' | 'learning' | 'reviewing' | 'stable' | 'weak';
+  createdAt: string;
+  moveSan: string | null;
+  movePly: number | null;
+  positionFen: string | null;
+  positionPly: number | null;
+  sideToMove: 'white' | 'black' | null;
+  tutorSummary: string | null;
+  tutorFocus: string[];
+  expectedBestMove: string | null;
+  expectedScoreLabel: string | null;
+  expectedDepth: number | null;
+  reviewDueAt: string | null;
+  reviewLastResult: ReviewResult | null;
+  latestAnswer: string | null;
+}
+
+interface LearningTraceResponse {
+  query: string;
+  results: LearningTraceResult[];
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4174';
@@ -354,6 +391,9 @@ export function useChessGame() {
   const [lastLearningEvent, setLastLearningEvent] = useState<LearningEvent | null>(null);
   const [reviewResultLoadingId, setReviewResultLoadingId] = useState<string | null>(null);
   const [reviewResultError, setReviewResultError] = useState<string | null>(null);
+  const [learningTraceResults, setLearningTraceResults] = useState<LearningTraceResult[]>([]);
+  const [learningTraceLoading, setLearningTraceLoading] = useState(false);
+  const [learningTraceError, setLearningTraceError] = useState<string | null>(null);
   const [fenImportLoading, setFenImportLoading] = useState(false);
   const [fenImportError, setFenImportError] = useState<string | null>(null);
   const [pgnImportLoading, setPgnImportLoading] = useState(false);
@@ -900,6 +940,31 @@ export function useChessGame() {
     }
   }
 
+  async function searchLearningTrace(query: string) {
+    const trimmedQuery = query.trim();
+    setLearningTraceLoading(true);
+    setLearningTraceError(null);
+    try {
+      const params = new URLSearchParams();
+      if (trimmedQuery) {
+        params.set('q', trimmedQuery);
+      }
+      if (state?.gameId) {
+        params.set('gameId', state.gameId);
+      }
+      params.set('limit', '6');
+      const payload = await getJson<LearningTraceResponse>(`${apiBaseUrl}/api/learning/search?${params.toString()}`);
+      setLearningTraceResults(payload.results);
+      return payload.results;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo buscar en la memoria de aprendizaje.';
+      setLearningTraceError(message);
+      return [];
+    } finally {
+      setLearningTraceLoading(false);
+    }
+  }
+
   async function exportPgn() {
     if (!state) {
       return null;
@@ -962,6 +1027,9 @@ export function useChessGame() {
     lastLearningEvent,
     reviewResultLoadingId,
     reviewResultError,
+    learningTraceResults,
+    learningTraceLoading,
+    learningTraceError,
     engineStatus,
     engineStatusLoading,
     fenImportLoading,
@@ -979,6 +1047,7 @@ export function useChessGame() {
     explainWithTutor,
     createLearningEventFromReport,
     recordReviewResult,
+    searchLearningTrace,
     setSelectedTutorProviderId,
     setSelectedTutorDepth,
     refreshPostGameReport,

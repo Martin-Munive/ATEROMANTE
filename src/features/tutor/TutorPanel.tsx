@@ -8,6 +8,7 @@ interface TutorPanelProps {
 
 export function TutorPanel({ game }: TutorPanelProps) {
   const [reviewAnswers, setReviewAnswers] = useState<Record<string, string>>({});
+  const [traceQuery, setTraceQuery] = useState('');
   const lastMove = game.lastMove?.san ?? 'sin jugada';
   const verdict = game.lastError ?? (game.inCheck ? 'Jaque detectado: revisa la seguridad del rey.' : 'Movimiento legal registrado por el árbitro interno.');
   const tutorDepths = [
@@ -157,19 +158,31 @@ export function TutorPanel({ game }: TutorPanelProps) {
               </p>
             )}
             {game.postGameReport.criticalPosition && (
-              <p className="critical-position">
-                <strong>Crítica:</strong>
-                {' '}
-                {game.postGameReport.criticalPosition.san
-                  ? `tras ${game.postGameReport.criticalPosition.san}`
-                  : `ply ${game.postGameReport.criticalPosition.ply}`}
-                {' · '}
-                {game.postGameReport.criticalPosition.reason}
-                {' · '}
-                {game.postGameReport.criticalPosition.categoryLabel}
-                {' · '}
-                {`severidad ${game.postGameReport.criticalPosition.severityLabel}`}
-              </p>
+              <>
+                <p className="critical-position">
+                  <strong>Crítica:</strong>
+                  {' '}
+                  {game.postGameReport.criticalPosition.san
+                    ? `tras ${game.postGameReport.criticalPosition.san}`
+                    : `ply ${game.postGameReport.criticalPosition.ply}`}
+                  {' · '}
+                  {game.postGameReport.criticalPosition.reason}
+                  {' · '}
+                  {game.postGameReport.criticalPosition.categoryLabel}
+                  {' · '}
+                  {`severidad ${game.postGameReport.criticalPosition.severityLabel}`}
+                </p>
+                {game.postGameReport.criticalPositions.length > 1 && (
+                  <ul className="critical-list">
+                    {game.postGameReport.criticalPositions.slice(1, 3).map((position) => (
+                      <li key={position.positionId}>
+                        <strong>{position.san ? `tras ${position.san}` : `ply ${position.ply}`}</strong>
+                        {` ${position.categoryLabel} · severidad ${position.severityLabel}`}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
             {game.postGameReport.tutorFocus.length > 0 && (
               <ul className="annotation-list">
@@ -259,6 +272,44 @@ export function TutorPanel({ game }: TutorPanelProps) {
                 {' · '}
                 {game.lastLearningEvent.summary}
               </p>
+            )}
+            <form
+              className="trace-search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void game.searchLearningTrace(traceQuery);
+              }}
+            >
+              <label htmlFor="trace-search-input">Buscar aprendizaje</label>
+              <div>
+                <input
+                  id="trace-search-input"
+                  onChange={(event) => setTraceQuery(event.target.value)}
+                  placeholder="centro, d2d4, seguridad del rey..."
+                  type="search"
+                  value={traceQuery}
+                />
+                <button disabled={game.learningTraceLoading} type="submit">
+                  Buscar
+                </button>
+              </div>
+            </form>
+            {game.learningTraceError && <p><strong>{game.learningTraceError}</strong></p>}
+            {game.learningTraceResults.length > 0 && (
+              <ul className="annotation-list trace-results">
+                {game.learningTraceResults.slice(0, 3).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.theme}</strong>
+                    {[
+                      item.moveSan ? `tras ${item.moveSan}` : item.positionPly !== null ? `ply ${item.positionPly}` : null,
+                      item.expectedBestMove ? `candidata ${item.expectedBestMove}` : null,
+                      item.reviewDueAt ? `repaso ${new Date(item.reviewDueAt).toLocaleDateString('es-CO')}` : null,
+                    ].filter(Boolean).join(' · ')}
+                    <p>{item.summary}</p>
+                    {item.positionFen && <small className="review-fen">{item.positionFen}</small>}
+                  </li>
+                ))}
+              </ul>
             )}
           </>
         )}

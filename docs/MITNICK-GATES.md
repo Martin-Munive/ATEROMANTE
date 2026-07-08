@@ -73,9 +73,11 @@ Evidence:
 - Tutor provider and depth selection are visible in the UI, while execution remains server-side.
 - `chat-completions-compatible` provider is implemented with neutral naming and covered with a local fake HTTP server test.
 - `GET /api/games/:gameId/report` builds the first post-game report from persisted moves, engine evaluations and tutor events.
-- The report panel shows compact counts, latest engine recommendation, recurring tutor focus and a next review suggestion without exposing private files.
+- The report panel shows compact counts, latest engine recommendation, prioritized critical positions, recurring tutor focus and a next review suggestion without exposing private files.
 - `POST /api/games/:gameId/learning/from-report` persists the report recommendation as a `learning_events` row linked to local game, move, position and tutor event identifiers.
 - The report panel shows saved learning count and the last saved event without exposing private files or provider secrets.
+- Review items store written recall attempts, lightweight alignment signals, self-grading and next due dates for spaced review.
+- `GET /api/learning/search` searches local learning traces by theme, explanation, SAN, FEN fragment or engine candidate without external network calls.
 
 Criteria:
 - no private material in public project;
@@ -97,7 +99,7 @@ Criteria:
 - avoid network code before the local session/event model exists.
 
 ### Documentation Gate
-Status: PASS_WITH_RISK for the current technical spike.
+Status: PASS_WITH_RISK for the current MVP educativo local.
 
 Evidence:
 - README covers install, current capabilities, verification commands and limitations.
@@ -110,15 +112,15 @@ Evidence:
 - Non-blocking visual layout issues found during functional construction must be recorded as UI/UX debt and deferred unless they prevent use or verification.
 
 Residual risk before broader user/developer use:
-- user guide must be expanded when recursive variation editing, deeper diagnostic reports, review queues and exercise generation exist;
+- user guide must be expanded when recursive variation editing, deeper diagnostic reports and search/retrieval exist;
 - developer guide must be expanded when advanced PGN structures, tutor, metrics and connector services stabilize;
 - visible-window resource distribution still needs a dedicated responsive layout pass after the functional MVP is complete;
 - release candidates still need a documentation gate checklist tied to the exact release scope.
 
 Criteria:
 - a new user can install and run the primary flow from public docs;
-- a new developer can understand the app structure and add a bounded feature without reading internal BRAIN notes;
-- public docs do not include prompts, handoffs, private material or internal planning;
+- a new developer can understand the app structure and add a bounded feature from public docs alone;
+- public docs do not include private material or internal planning;
 - external dependencies such as Stockfish and LLM providers have setup and troubleshooting guidance.
 
 ### Supply Chain Gate
