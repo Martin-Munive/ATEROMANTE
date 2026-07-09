@@ -38,10 +38,10 @@
 - Normalize richer PGN source metadata.
 - Store FEN and position hashes.
 - Tag moves and positions by phase, theme and mistake type.
-- Add FTS search for tutor explanations and notes.
+- Add baseline FTS search for tutor explanations, notes, tags and written review attempts.
 - Add review queue from learning events.
 - Record basic review results, written attempts, lightweight answer alignment and engine-candidate mention.
-- Expand "where did I learn this?" retrieval with openings, richer tags and position hashes.
+- Expand "where did I learn this?" retrieval with openings, position families and richer position-hash workflows.
 
 ## MVP 2 - Local Training Game
 - Play against engine inside the app.

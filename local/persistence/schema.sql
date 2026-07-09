@@ -239,6 +239,12 @@ CREATE TABLE IF NOT EXISTS review_attempts (
   created_at TEXT NOT NULL
 );
 
+CREATE VIRTUAL TABLE IF NOT EXISTS learning_trace_fts USING fts5(
+  learning_event_id UNINDEXED,
+  game_id UNINDEXED,
+  content
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_source_external ON games(source, external_id);
 CREATE INDEX IF NOT EXISTS idx_pgn_sources_sha256 ON pgn_sources(pgn_sha256);
 CREATE INDEX IF NOT EXISTS idx_games_opening_result ON games(opening_eco, result);

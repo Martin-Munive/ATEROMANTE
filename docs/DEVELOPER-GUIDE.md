@@ -192,7 +192,7 @@ Important tables:
 8. Review items include the linked position FEN, ply, side to move, latest engine candidate when available and an API-built exercise prompt for directed recall.
 9. The review queue can call `POST /api/reviews/:reviewItemId/result` with `again`, `hard`, `good` or `easy` plus optional `answerText` to store the learner's written recall before grading.
 10. The API updates the next due date, ease and mastery state, stores the written attempt in `review_attempts`, and returns a lightweight answer assessment based on expected theme/summary terms plus optional engine-candidate mention.
-11. The UI can call `GET /api/learning/search?q=<term>&gameId=<id>` to recover learning traces by theme, explanation, SAN move, FEN or stored engine candidate.
+11. The UI can call `GET /api/learning/search?q=<term>&gameId=<id>` to recover learning traces by theme, explanation, SAN move, FEN, stored engine candidate, tags or written review attempts. The repository uses a local SQLite FTS5 index and falls back to bounded exact matching for unsupported query shapes.
 
 ### FEN Import
 1. User pastes a single-line FEN in the sidebar.
@@ -268,6 +268,8 @@ Implemented baseline:
 - `GET /api/games/:gameId/report`;
 - `POST /api/games/:gameId/learning/from-report`;
 - `GET /api/learning/search`;
+
+The local persistence layer keeps `learning_trace_fts` as a rebuildable search index over learning events, tutor summaries, move/position metadata, tags and written review attempts. It is not an external search service and can be regenerated from normalized tables.
 - `TutorEventRepository`;
 - `TutorEventRepository.listByGame()`;
 - API-side `mock-local` provider;

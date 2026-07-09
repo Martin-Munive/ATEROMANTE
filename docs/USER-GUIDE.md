@@ -117,7 +117,7 @@ The same panel shows an initial `Reporte post-partida` block. It summarizes move
 
 When the report has review items, ATEROMANTE shows a directed exercise prompt tied to the saved position. Write what you remember or calculate in the review box before grading yourself with `Repetir`, `Difícil`, `Bien` or `Fácil`. ATEROMANTE stores that written attempt, gives a lightweight alignment signal, can compare the answer against the saved engine candidate when one exists, updates the next review interval and updates the mastery state for that learning event.
 
-Use `Buscar aprendizaje` to recover saved learning traces by theme, tutor explanation text, SAN move, FEN fragment or engine candidate. This is the first local answer to "where did I learn this?" and only searches the local SQLite learning memory.
+Use `Buscar aprendizaje` to recover saved learning traces by theme, tutor explanation text, SAN move, FEN fragment, engine candidate, tags or written review attempts. This is the first local answer to "where did I learn this?" and searches the local SQLite learning memory through a local FTS index.
 
 This is the first reporting and learning-memory layer; it is not yet a full weakness map or exercise generator.
 

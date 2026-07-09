@@ -13,6 +13,14 @@ function booleanInt(value) {
   return value ? 1 : 0;
 }
 
+function ftsQuery(value) {
+  const terms = String(value ?? '').match(/[\p{L}\p{N}_]+/gu) ?? [];
+  return terms
+    .slice(0, 8)
+    .map((term) => `${term.replaceAll('"', '""')}*`)
+    .join(' OR ');
+}
+
 function rowToEvent(row) {
   return {
     ...row,
@@ -736,6 +744,7 @@ export class LearningRepository {
       throw error;
     }
 
+    this.refreshLearningTraceIndex(learningEventId);
     return this.getLearningEvent(learningEventId);
   }
 
@@ -781,6 +790,7 @@ export class LearningRepository {
   searchLearningTrace({ query = '', gameId = null, limit = 8 } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim().slice(0, 120) : '';
     const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 25 ? limit : 8;
+    const matchQuery = ftsQuery(normalizedQuery);
     const clauses = [];
     const values = [];
 
@@ -789,7 +799,10 @@ export class LearningRepository {
       values.push(gameId);
     }
 
-    if (normalizedQuery) {
+    if (matchQuery) {
+      clauses.push('learning_trace_fts MATCH ?');
+      values.push(matchQuery);
+    } else if (normalizedQuery) {
       const likeQuery = `%${normalizedQuery.toLowerCase()}%`;
       clauses.push(`(
         LOWER(le.theme) LIKE ?
@@ -813,9 +826,13 @@ export class LearningRepository {
 
     values.push(boundedLimit);
     const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const ftsJoin = matchQuery ? 'JOIN learning_trace_fts ON learning_trace_fts.learning_event_id = le.id' : '';
+    const rankSelect = matchQuery ? 'bm25(learning_trace_fts) AS trace_rank,' : 'NULL AS trace_rank,';
+    const orderBy = matchQuery ? 'trace_rank ASC, le.created_at DESC' : 'le.created_at DESC';
 
     return this.db.prepare(`
       SELECT
+        ${rankSelect}
         le.*,
         m.san AS move_san,
         m.ply AS move_ply,
@@ -839,6 +856,7 @@ export class LearningRepository {
           LIMIT 1
         ) AS latest_answer
       FROM learning_events le
+      ${ftsJoin}
       LEFT JOIN moves m ON m.id = le.move_id
       LEFT JOIN positions p ON p.id = le.position_id
       LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
@@ -852,9 +870,69 @@ export class LearningRepository {
         LIMIT 1
       )
       ${where}
-      ORDER BY le.created_at DESC
+      ORDER BY ${orderBy}
       LIMIT ?
     `).all(...values);
+  }
+
+  refreshLearningTraceIndex(learningEventId) {
+    this.db.prepare('DELETE FROM learning_trace_fts WHERE learning_event_id = ?').run(learningEventId);
+    const row = this.db.prepare(`
+      SELECT
+        le.id AS learning_event_id,
+        COALESCE(le.game_id, '') AS game_id,
+        trim(
+          COALESCE(le.theme, '') || ' ' ||
+          COALESCE(le.skill, '') || ' ' ||
+          COALESCE(le.summary, '') || ' ' ||
+          COALESCE(le.explanation, '') || ' ' ||
+          COALESCE(le.student_action, '') || ' ' ||
+          COALESCE(te.summary, '') || ' ' ||
+          COALESCE(te.teaching_focus_json, '') || ' ' ||
+          COALESCE(m.san, '') || ' ' ||
+          COALESCE(m.uci, '') || ' ' ||
+          COALESCE(m.classification, '') || ' ' ||
+          COALESCE(p.fen, '') || ' ' ||
+          COALESCE(p.fen_hash, '') || ' ' ||
+          COALESCE(p.phase, '') || ' ' ||
+          COALESCE(p.pawn_structure_tags, '') || ' ' ||
+          COALESCE(p.tactical_motifs, '') || ' ' ||
+          COALESCE(p.strategic_themes, '') || ' ' ||
+          COALESCE(ee.best_move, '') || ' ' ||
+          COALESCE((
+            SELECT group_concat(t.name || ' ' || t.category, ' ')
+            FROM learning_event_tags let
+            JOIN tags t ON t.id = let.tag_id
+            WHERE let.learning_event_id = le.id
+          ), '') || ' ' ||
+          COALESCE((
+            SELECT group_concat(ra.answer_text, ' ')
+            FROM review_items ri
+            JOIN review_attempts ra ON ra.review_item_id = ri.id
+            WHERE ri.learning_event_id = le.id
+          ), '')
+        ) AS content
+      FROM learning_events le
+      LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
+      LEFT JOIN moves m ON m.id = le.move_id
+      LEFT JOIN positions p ON p.id = le.position_id
+      LEFT JOIN engine_evaluations ee ON ee.id = (
+        SELECT latest_ee.id
+        FROM engine_evaluations latest_ee
+        WHERE latest_ee.game_id = le.game_id
+          AND latest_ee.position_id = le.position_id
+        ORDER BY latest_ee.created_at DESC
+        LIMIT 1
+      )
+      WHERE le.id = ?
+    `).get(learningEventId);
+
+    if (row) {
+      this.db.prepare(`
+        INSERT INTO learning_trace_fts (learning_event_id, game_id, content)
+        VALUES (?, ?, ?)
+      `).run(row.learning_event_id, row.game_id, row.content);
+    }
   }
 
   listByGame(gameId) {
@@ -1022,6 +1100,7 @@ export class LearningRepository {
       throw error;
     }
 
+    this.refreshLearningTraceIndex(current.learning_event_id);
     return this.getReviewItemDetail(reviewItemId);
   }
 

@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export const STANDARD_STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -40,13 +40,24 @@ export function migrate(db) {
     ADD COLUMN parent_variation_index INTEGER CHECK (parent_variation_index IS NULL OR parent_variation_index >= 0)
   `);
 
-  const existing = db
+  ensureLearningTraceFts(db);
+
+  const versionOne = db
+    .prepare('SELECT version FROM schema_migrations WHERE version = ?')
+    .get(1);
+
+  if (!versionOne) {
+    db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
+      .run(1, 'initial_event_log_schema', nowIso());
+  }
+
+  const versionTwo = db
     .prepare('SELECT version FROM schema_migrations WHERE version = ?')
     .get(SCHEMA_VERSION);
 
-  if (!existing) {
+  if (!versionTwo) {
     db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
-      .run(SCHEMA_VERSION, 'initial_event_log_schema', nowIso());
+      .run(SCHEMA_VERSION, 'learning_trace_fts', nowIso());
   }
 }
 
@@ -55,6 +66,74 @@ function ensureColumn(db, tableName, columnName, alterSql) {
   if (!columns.some((column) => column.name === columnName)) {
     db.exec(alterSql);
   }
+}
+
+function ensureLearningTraceFts(db) {
+  const table = db.prepare(`
+    SELECT name FROM sqlite_master
+    WHERE type = 'table' AND name = 'learning_trace_fts'
+  `).get();
+
+  if (!table) {
+    db.exec(`
+      CREATE VIRTUAL TABLE learning_trace_fts USING fts5(
+        learning_event_id UNINDEXED,
+        game_id UNINDEXED,
+        content
+      )
+    `);
+  }
+
+  db.prepare('DELETE FROM learning_trace_fts').run();
+  db.prepare(`
+    INSERT INTO learning_trace_fts (learning_event_id, game_id, content)
+    SELECT
+      le.id,
+      COALESCE(le.game_id, ''),
+      trim(
+        COALESCE(le.theme, '') || ' ' ||
+        COALESCE(le.skill, '') || ' ' ||
+        COALESCE(le.summary, '') || ' ' ||
+        COALESCE(le.explanation, '') || ' ' ||
+        COALESCE(le.student_action, '') || ' ' ||
+        COALESCE(te.summary, '') || ' ' ||
+        COALESCE(te.teaching_focus_json, '') || ' ' ||
+        COALESCE(m.san, '') || ' ' ||
+        COALESCE(m.uci, '') || ' ' ||
+        COALESCE(m.classification, '') || ' ' ||
+        COALESCE(p.fen, '') || ' ' ||
+        COALESCE(p.fen_hash, '') || ' ' ||
+        COALESCE(p.phase, '') || ' ' ||
+        COALESCE(p.pawn_structure_tags, '') || ' ' ||
+        COALESCE(p.tactical_motifs, '') || ' ' ||
+        COALESCE(p.strategic_themes, '') || ' ' ||
+        COALESCE(ee.best_move, '') || ' ' ||
+        COALESCE((
+          SELECT group_concat(t.name || ' ' || t.category, ' ')
+          FROM learning_event_tags let
+          JOIN tags t ON t.id = let.tag_id
+          WHERE let.learning_event_id = le.id
+        ), '') || ' ' ||
+        COALESCE((
+          SELECT group_concat(ra.answer_text, ' ')
+          FROM review_items ri
+          JOIN review_attempts ra ON ra.review_item_id = ri.id
+          WHERE ri.learning_event_id = le.id
+        ), '')
+      )
+    FROM learning_events le
+    LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
+    LEFT JOIN moves m ON m.id = le.move_id
+    LEFT JOIN positions p ON p.id = le.position_id
+    LEFT JOIN engine_evaluations ee ON ee.id = (
+      SELECT latest_ee.id
+      FROM engine_evaluations latest_ee
+      WHERE latest_ee.game_id = le.game_id
+        AND latest_ee.position_id = le.position_id
+      ORDER BY latest_ee.created_at DESC
+      LIMIT 1
+    )
+  `).run();
 }
 
 export function closeDatabase(db) {

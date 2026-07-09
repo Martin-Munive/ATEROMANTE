@@ -34,6 +34,7 @@ test('migration creates the normalized persistence core', () => {
     'event_log',
     'games',
     'learning_events',
+    'learning_trace_fts',
     'match_policies',
     'moves',
     'pgn_annotations',
@@ -226,6 +227,13 @@ test('learning events can be traced back to the source position', () => {
   assert.equal(traceResults[0].position_fen, STANDARD_STARTING_FEN);
   assert.equal(traceResults[0].review_item_id, review.id);
   assert.equal(traceResults[0].latest_answer, 'Debo ocupar el centro antes de jugar por el flanco.');
+
+  const indexed = db.prepare('SELECT learning_event_id FROM learning_trace_fts WHERE learning_trace_fts MATCH ?')
+    .all('strategy');
+  assert.equal(indexed[0].learning_event_id, lesson.id);
+
+  const tagTraceResults = learning.searchLearningTrace({ query: 'strategy', gameId: game.id });
+  assert.equal(tagTraceResults[0].id, lesson.id);
 
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));

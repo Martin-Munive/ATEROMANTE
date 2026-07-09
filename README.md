@@ -102,6 +102,7 @@ Implementado:
 - ejercicios dirigidos desde posiciones guardadas;
 - cola de repaso con intento escrito, autoevaluacion, senal ligera de alineacion y proxima fecha;
 - busqueda local de trazabilidad para responder donde se aprendio un tema, jugada candidata o posicion;
+- indice FTS5 local para recuperar aprendizajes por explicaciones, notas, tags, respuestas escritas y metadatos de posicion;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -111,6 +112,7 @@ Implementado:
 Pendiente inmediato:
 
 - soporte PGN avanzado: edicion de variantes y metadatos de fuente enriquecidos para conectores;
+- enriquecer busqueda con aperturas, familias de posicion y similitud por hash;
 - calidad pedagogica del tutor con modelos reales;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.
