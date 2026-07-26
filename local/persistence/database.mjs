@@ -96,6 +96,8 @@ function ensureLearningTraceFts(db) {
         COALESCE(le.summary, '') || ' ' ||
         COALESCE(le.explanation, '') || ' ' ||
         COALESCE(le.student_action, '') || ' ' ||
+        COALESCE(g.opening_eco, '') || ' ' ||
+        COALESCE(g.opening_name, '') || ' ' ||
         COALESCE(te.summary, '') || ' ' ||
         COALESCE(te.teaching_focus_json, '') || ' ' ||
         COALESCE(m.san, '') || ' ' ||
@@ -122,6 +124,7 @@ function ensureLearningTraceFts(db) {
         ), '')
       )
     FROM learning_events le
+    LEFT JOIN games g ON g.id = le.game_id
     LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
     LEFT JOIN moves m ON m.id = le.move_id
     LEFT JOIN positions p ON p.id = le.position_id

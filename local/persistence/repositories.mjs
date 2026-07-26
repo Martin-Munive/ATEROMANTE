@@ -176,6 +176,8 @@ export class GameRepository {
     source = 'local',
     externalId = null,
     initialFen = STANDARD_STARTING_FEN,
+    openingEco = null,
+    openingName = null,
     tutorPolicy = 'private-live',
     enginePolicy = 'evaluation-only',
     assistedTraining = true,
@@ -185,15 +187,17 @@ export class GameRepository {
 
     this.db.prepare(`
       INSERT INTO games (
-        id, session_id, source, external_id, initial_fen, assisted_training,
+        id, session_id, source, external_id, initial_fen, opening_eco, opening_name, assisted_training,
         tutor_policy, engine_policy, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       gameId,
       sessionId,
       source,
       externalId,
       initialFen,
+      openingEco,
+      openingName,
       booleanInt(assistedTraining),
       tutorPolicy,
       enginePolicy,
@@ -209,6 +213,15 @@ export class GameRepository {
       occurredAt: timestamp,
     });
 
+    return this.getGame(gameId);
+  }
+
+  updateOpeningMetadata({ gameId, openingEco = null, openingName = null }) {
+    this.db.prepare(`
+      UPDATE games
+      SET opening_eco = ?, opening_name = ?, updated_at = ?
+      WHERE id = ?
+    `).run(openingEco, openingName, nowIso(), gameId);
     return this.getGame(gameId);
   }
 
@@ -341,6 +354,11 @@ export class GameRepository {
 
   recordPgnHeaders({ gameId, headers = {} }) {
     const timestamp = nowIso();
+    this.updateOpeningMetadata({
+      gameId,
+      openingEco: headers.ECO ?? null,
+      openingName: headers.Opening ?? null,
+    });
     this.db.prepare(`
       INSERT INTO pgn_headers (
         game_id, headers_json, event, site, date, round, white, black, result, created_at
@@ -813,6 +831,8 @@ export class LearningRepository {
         OR LOWER(COALESCE(m.san, '')) LIKE ?
         OR LOWER(COALESCE(p.fen, '')) LIKE ?
         OR LOWER(COALESCE(ee.best_move, '')) LIKE ?
+        OR LOWER(COALESCE(g.opening_eco, '')) LIKE ?
+        OR LOWER(COALESCE(g.opening_name, '')) LIKE ?
         OR EXISTS (
           SELECT 1
           FROM review_attempts search_ra
@@ -821,7 +841,7 @@ export class LearningRepository {
             AND LOWER(search_ra.answer_text) LIKE ?
         )
       )`);
-      values.push(likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery);
+      values.push(likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery, likeQuery);
     }
 
     values.push(boundedLimit);
@@ -841,6 +861,8 @@ export class LearningRepository {
         p.side_to_move,
         te.summary AS tutor_summary,
         te.teaching_focus_json AS tutor_focus_json,
+        g.opening_eco,
+        g.opening_name,
         ee.best_move AS expected_best_move,
         ee.score_cp AS expected_score_cp,
         ee.score_mate AS expected_score_mate,
@@ -857,6 +879,7 @@ export class LearningRepository {
         ) AS latest_answer
       FROM learning_events le
       ${ftsJoin}
+      LEFT JOIN games g ON g.id = le.game_id
       LEFT JOIN moves m ON m.id = le.move_id
       LEFT JOIN positions p ON p.id = le.position_id
       LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
@@ -887,6 +910,8 @@ export class LearningRepository {
           COALESCE(le.summary, '') || ' ' ||
           COALESCE(le.explanation, '') || ' ' ||
           COALESCE(le.student_action, '') || ' ' ||
+          COALESCE(g.opening_eco, '') || ' ' ||
+          COALESCE(g.opening_name, '') || ' ' ||
           COALESCE(te.summary, '') || ' ' ||
           COALESCE(te.teaching_focus_json, '') || ' ' ||
           COALESCE(m.san, '') || ' ' ||
@@ -913,6 +938,7 @@ export class LearningRepository {
           ), '')
         ) AS content
       FROM learning_events le
+      LEFT JOIN games g ON g.id = le.game_id
       LEFT JOIN tutor_events te ON te.id = le.tutor_event_id
       LEFT JOIN moves m ON m.id = le.move_id
       LEFT JOIN positions p ON p.id = le.position_id

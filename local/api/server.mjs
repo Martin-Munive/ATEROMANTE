@@ -73,6 +73,10 @@ function serializeState(state) {
     gameId: state.game.id,
     fen: state.fen,
     pgn: state.pgn,
+    opening: {
+      eco: state.game.opening_eco,
+      name: state.game.opening_name,
+    },
     pgnHeaders: state.pgnHeaders?.headers ?? {},
     pgnSource: state.pgnSource ? {
       sourceType: state.pgnSource.source_type,
@@ -308,6 +312,8 @@ function serializeLearningTrace(row) {
     sideToMove: row.side_to_move ?? null,
     tutorSummary: row.tutor_summary ?? null,
     tutorFocus: focus,
+    openingEco: row.opening_eco ?? null,
+    openingName: row.opening_name ?? null,
     expectedBestMove: row.expected_best_move ?? null,
     expectedScoreLabel,
     expectedDepth: row.expected_depth ?? null,

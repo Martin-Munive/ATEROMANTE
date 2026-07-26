@@ -33,6 +33,7 @@
 - Display a prioritized short list of critical positions in the review report.
 - Link every learning event to game, move and position.
 - Search saved lessons by theme, explanation text, move, FEN fragment and engine candidate.
+- Search saved lessons by PGN ECO/opening metadata.
 
 ## MVP 1.5 - Traceability And Search
 - Normalize richer PGN source metadata.
@@ -41,7 +42,7 @@
 - Add baseline FTS search for tutor explanations, notes, tags and written review attempts.
 - Add review queue from learning events.
 - Record basic review results, written attempts, lightweight answer alignment and engine-candidate mention.
-- Expand "where did I learn this?" retrieval with openings, position families and richer position-hash workflows.
+- Expand "where did I learn this?" retrieval with position families and richer position-hash workflows.
 
 ## MVP 2 - Local Training Game
 - Play against engine inside the app.

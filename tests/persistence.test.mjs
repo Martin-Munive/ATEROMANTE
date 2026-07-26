@@ -177,7 +177,11 @@ test('learning events can be traced back to the source position', () => {
   const learning = new LearningRepository(db, events);
 
   const session = sessions.createSession();
-  const game = games.createGame({ sessionId: session.id });
+  const game = games.createGame({
+    sessionId: session.id,
+    openingEco: 'B90',
+    openingName: 'Sicilian Defense: Najdorf Variation',
+  });
   const position = games.recordPosition({
     sessionId: session.id,
     gameId: game.id,
@@ -234,6 +238,11 @@ test('learning events can be traced back to the source position', () => {
 
   const tagTraceResults = learning.searchLearningTrace({ query: 'strategy', gameId: game.id });
   assert.equal(tagTraceResults[0].id, lesson.id);
+
+  const openingTraceResults = learning.searchLearningTrace({ query: 'Najdorf', gameId: game.id });
+  assert.equal(openingTraceResults[0].id, lesson.id);
+  assert.equal(openingTraceResults[0].opening_eco, 'B90');
+  assert.equal(openingTraceResults[0].opening_name, 'Sicilian Defense: Najdorf Variation');
 
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));

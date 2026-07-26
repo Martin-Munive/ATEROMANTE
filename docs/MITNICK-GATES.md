@@ -77,7 +77,7 @@ Evidence:
 - `POST /api/games/:gameId/learning/from-report` persists the report recommendation as a `learning_events` row linked to local game, move, position and tutor event identifiers.
 - The report panel shows saved learning count and the last saved event without exposing private files or provider secrets.
 - Review items store written recall attempts, lightweight alignment signals, self-grading and next due dates for spaced review.
-- `GET /api/learning/search` searches local learning traces by theme, explanation, SAN, FEN fragment, engine candidate, tag and written review attempt through SQLite FTS5 without external network calls.
+- `GET /api/learning/search` searches local learning traces by theme, explanation, SAN, FEN fragment, engine candidate, PGN ECO/opening, tag and written review attempt through SQLite FTS5 without external network calls.
 
 Criteria:
 - no private material in public project;

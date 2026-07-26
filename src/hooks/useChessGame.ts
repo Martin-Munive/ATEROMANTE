@@ -19,6 +19,10 @@ interface ApiGameState {
   gameId: string;
   fen: string;
   pgn: string;
+  opening: {
+    eco: string | null;
+    name: string | null;
+  };
   pgnHeaders: Record<string, string>;
   pgnSource: PgnSource | null;
   pgnAnnotations: PgnAnnotation[];
@@ -275,6 +279,8 @@ export interface LearningTraceResult {
   sideToMove: 'white' | 'black' | null;
   tutorSummary: string | null;
   tutorFocus: string[];
+  openingEco: string | null;
+  openingName: string | null;
   expectedBestMove: string | null;
   expectedScoreLabel: string | null;
   expectedDepth: number | null;

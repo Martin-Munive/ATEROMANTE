@@ -157,6 +157,8 @@ test('local API imports a basic PGN as a study session', async () => {
       '[White "Alice"]',
       '[Black "Bob"]',
       '[Result "*"]',
+      '[ECO "C60"]',
+      '[Opening "Ruy Lopez"]',
       '',
       '1. e4! {Claims central space.} e5 (1... c5 (1... e6) 2. Nf3) 2. Nf3 $1 Nc6 3. Bb5 a6',
     ].join('\n');
@@ -181,6 +183,8 @@ test('local API imports a basic PGN as a study session', async () => {
     assert.equal(imported.pgnHeaders.Event, 'Training Match');
     assert.equal(imported.pgnHeaders.White, 'Alice');
     assert.equal(imported.pgnHeaders.Black, 'Bob');
+    assert.equal(imported.opening.eco, 'C60');
+    assert.equal(imported.opening.name, 'Ruy Lopez');
     assert.equal(imported.pgnSource.sourceType, 'file');
     assert.equal(imported.pgnSource.fileName, 'training-match.pgn');
     assert.equal(imported.pgnSource.byteSize, 256);

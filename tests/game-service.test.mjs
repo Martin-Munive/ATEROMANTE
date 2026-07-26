@@ -97,6 +97,8 @@ test('GameService preserves PGN headers and imported result', () => {
       '[White "Alice"]',
       '[Black "Bob"]',
       '[Result "1-0"]',
+      '[ECO "B90"]',
+      '[Opening "Sicilian Defense: Najdorf Variation"]',
       '',
       '1. e4 e5 2. Nf3 Nc6 1-0',
     ].join('\n'),
@@ -109,6 +111,8 @@ test('GameService preserves PGN headers and imported result', () => {
   assert.equal(timeline.pgnHeaders.headers.White, 'Alice');
   assert.equal(timeline.pgnHeaders.headers.Black, 'Bob');
   assert.equal(timeline.pgnHeaders.result, '1-0');
+  assert.equal(timeline.game.opening_eco, 'B90');
+  assert.equal(timeline.game.opening_name, 'Sicilian Defense: Najdorf Variation');
 
   closeDatabase(db);
 });

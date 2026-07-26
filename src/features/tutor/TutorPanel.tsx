@@ -302,6 +302,7 @@ export function TutorPanel({ game }: TutorPanelProps) {
                     <strong>{item.theme}</strong>
                     {[
                       item.moveSan ? `tras ${item.moveSan}` : item.positionPly !== null ? `ply ${item.positionPly}` : null,
+                      item.openingEco ?? item.openingName,
                       item.expectedBestMove ? `candidata ${item.expectedBestMove}` : null,
                       item.reviewDueAt ? `repaso ${new Date(item.reviewDueAt).toLocaleDateString('es-CO')}` : null,
                     ].filter(Boolean).join(' · ')}
