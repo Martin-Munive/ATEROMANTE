@@ -104,6 +104,8 @@ Implementado:
 - busqueda local de trazabilidad para responder donde se aprendio un tema, jugada candidata o posicion;
 - indice FTS5 local para recuperar aprendizajes por explicaciones, notas, tags, respuestas escritas y metadatos de posicion;
 - persistencia de metadatos PGN `ECO`/`Opening` y recuperacion de aprendizajes por apertura;
+- clasificacion estructurada de posiciones por fase, firma material, estructura de peones, motivos tacticos y temas estrategicos;
+- busqueda de aprendizajes por FEN o hash de posicion, con recuperacion de posiciones de la misma familia;
 - recuperacion visual de sesiones persistidas desde el historial local;
 - tests de persistencia con `node:test`;
 - entorno local documentado;
@@ -113,7 +115,7 @@ Implementado:
 Pendiente inmediato:
 
 - soporte PGN avanzado: edicion de variantes y metadatos de fuente enriquecidos para conectores;
-- enriquecer busqueda con familias de posicion y similitud por hash;
+- refinar similitud posicional mas alla de la familia basica por fase/material/tags;
 - calidad pedagogica del tutor con modelos reales;
 - servidor/moderador real;
 - conectores a plataformas o bases externas.

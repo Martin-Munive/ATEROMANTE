@@ -277,6 +277,12 @@ export interface LearningTraceResult {
   positionFen: string | null;
   positionPly: number | null;
   sideToMove: 'white' | 'black' | null;
+  positionFenHash: string | null;
+  positionPhase: 'opening' | 'middlegame' | 'endgame' | 'unknown' | null;
+  materialSignature: string | null;
+  pawnStructureTags: string[];
+  tacticalMotifs: string[];
+  strategicThemes: string[];
   tutorSummary: string | null;
   tutorFocus: string[];
   openingEco: string | null;

@@ -270,6 +270,8 @@ Implemented baseline:
 - `GET /api/learning/search`;
 
 The local persistence layer keeps `learning_trace_fts` as a rebuildable search index over learning events, tutor summaries, move/position metadata, PGN ECO/opening metadata, tags and written review attempts. It is not an external search service and can be regenerated from normalized tables.
+- `GameService` enriches each persisted position with phase, material signature, pawn-structure tags, tactical motif tags and strategic theme tags.
+- `GET /api/learning/search` accepts normal text, SAN/engine terms, a full FEN or a 64-character position hash. FEN/hash queries expand to exact matches and compatible position-family matches when the target position exists locally.
 - `TutorEventRepository`;
 - `TutorEventRepository.listByGame()`;
 - API-side `mock-local` provider;

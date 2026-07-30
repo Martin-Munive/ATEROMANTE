@@ -20,6 +20,10 @@ test('GameService creates a persisted training game with initial legal moves', (
   const timeline = service.getGameState(created.game.id);
   assert.equal(timeline.positions.length, 1);
   assert.equal(timeline.moves.length, 0);
+  assert.equal(timeline.positions[0].phase, 'opening');
+  assert.match(timeline.positions[0].material_signature, /^w:Q1R2B2N2P8\|b:Q1R2B2N2P8$/);
+  assert.match(timeline.positions[0].pawn_structure_tags, /white-central-pawn/);
+  assert.match(timeline.positions[0].strategic_themes, /opening-position/);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [
     'game.created',
     'position.recorded',
@@ -328,6 +332,10 @@ test('GameService accepts a legal move and persists FEN, PGN and event order', (
   assert.equal(timeline.positions.length, 2);
   assert.equal(timeline.moves.length, 1);
   assert.equal(timeline.moves[0].position_after_id, result.positionAfter.id);
+  assert.equal(timeline.positions[1].phase, 'opening');
+  assert.match(timeline.positions[1].pawn_structure_tags, /white-central-pawn/);
+  assert.match(timeline.positions[1].tactical_motifs, /\[/);
+  assert.match(timeline.positions[1].strategic_themes, /center-presence/);
   assert.equal(timeline.events.map((event) => event.event_type).join(','), [
     'game.created',
     'position.recorded',

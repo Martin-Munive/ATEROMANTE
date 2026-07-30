@@ -303,10 +303,17 @@ export function TutorPanel({ game }: TutorPanelProps) {
                     {[
                       item.moveSan ? `tras ${item.moveSan}` : item.positionPly !== null ? `ply ${item.positionPly}` : null,
                       item.openingEco ?? item.openingName,
+                      item.positionPhase,
+                      item.materialSignature,
                       item.expectedBestMove ? `candidata ${item.expectedBestMove}` : null,
                       item.reviewDueAt ? `repaso ${new Date(item.reviewDueAt).toLocaleDateString('es-CO')}` : null,
                     ].filter(Boolean).join(' · ')}
                     <p>{item.summary}</p>
+                    {[...item.pawnStructureTags, ...item.tacticalMotifs, ...item.strategicThemes].length > 0 && (
+                      <small className="review-assessment">
+                        {[...item.pawnStructureTags, ...item.tacticalMotifs, ...item.strategicThemes].slice(0, 5).join(' · ')}
+                      </small>
+                    )}
                     {item.positionFen && <small className="review-fen">{item.positionFen}</small>}
                   </li>
                 ))}

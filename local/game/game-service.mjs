@@ -35,6 +35,156 @@ function sideToMove(turn) {
   return turn === 'w' ? 'white' : 'black';
 }
 
+function pieceColorLabel(color) {
+  return color === 'w' ? 'white' : 'black';
+}
+
+function classifyPhase({ chess, ply }) {
+  const materialValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  let material = 0;
+  let queens = 0;
+  let minorAndRookPieces = 0;
+
+  for (const row of chess.board()) {
+    for (const piece of row) {
+      if (!piece) {
+        continue;
+      }
+      material += materialValues[piece.type] ?? 0;
+      if (piece.type === 'q') {
+        queens += 1;
+      }
+      if (['n', 'b', 'r'].includes(piece.type)) {
+        minorAndRookPieces += 1;
+      }
+    }
+  }
+
+  if (material <= 22 || queens === 0 || minorAndRookPieces <= 4) {
+    return 'endgame';
+  }
+  if (ply <= 16) {
+    return 'opening';
+  }
+  return 'middlegame';
+}
+
+function buildMaterialSignature(chess) {
+  const counts = {
+    w: { q: 0, r: 0, b: 0, n: 0, p: 0 },
+    b: { q: 0, r: 0, b: 0, n: 0, p: 0 },
+  };
+
+  for (const row of chess.board()) {
+    for (const piece of row) {
+      if (piece && piece.type !== 'k') {
+        counts[piece.color][piece.type] += 1;
+      }
+    }
+  }
+
+  return [
+    `w:Q${counts.w.q}R${counts.w.r}B${counts.w.b}N${counts.w.n}P${counts.w.p}`,
+    `b:Q${counts.b.q}R${counts.b.r}B${counts.b.b}N${counts.b.n}P${counts.b.p}`,
+  ].join('|');
+}
+
+function classifyPawnStructure(chess) {
+  const pawnsByColor = { w: new Map(), b: new Map() };
+  const tags = new Set();
+
+  for (const row of chess.board()) {
+    for (const piece of row) {
+      if (!piece || piece.type !== 'p') {
+        continue;
+      }
+      const files = pawnsByColor[piece.color];
+      const file = piece.square[0];
+      files.set(file, (files.get(file) ?? 0) + 1);
+      if (['d', 'e'].includes(file)) {
+        tags.add(`${pieceColorLabel(piece.color)}-central-pawn`);
+      }
+    }
+  }
+
+  for (const [color, files] of Object.entries(pawnsByColor)) {
+    for (const [file, count] of files.entries()) {
+      if (count > 1) {
+        tags.add(`${pieceColorLabel(color)}-doubled-pawns-${file}`);
+      }
+      const previousFile = String.fromCharCode(file.charCodeAt(0) - 1);
+      const nextFile = String.fromCharCode(file.charCodeAt(0) + 1);
+      if (!files.has(previousFile) && !files.has(nextFile)) {
+        tags.add(`${pieceColorLabel(color)}-isolated-pawn-${file}`);
+      }
+    }
+  }
+
+  return [...tags].sort();
+}
+
+function classifyTacticalMotifs(chess) {
+  const motifs = new Set();
+
+  if (chess.inCheck()) {
+    motifs.add('king-in-check');
+  }
+
+  for (const move of chess.moves({ verbose: true })) {
+    if (move.captured) {
+      motifs.add('capture-available');
+    }
+    if (move.san.includes('+')) {
+      motifs.add('checking-move-available');
+    }
+    if (move.san.includes('#')) {
+      motifs.add('mate-move-available');
+    }
+    if (move.promotion) {
+      motifs.add('promotion-available');
+    }
+  }
+
+  return [...motifs].sort();
+}
+
+function classifyStrategicThemes({ chess, phase }) {
+  const themes = new Set([`${phase}-position`]);
+  const centerSquares = new Set(['d4', 'e4', 'd5', 'e5']);
+  const minorDevelopmentSquares = new Set(['c3', 'f3', 'c6', 'f6']);
+
+  for (const row of chess.board()) {
+    for (const piece of row) {
+      if (!piece) {
+        continue;
+      }
+      if (centerSquares.has(piece.square)) {
+        themes.add('center-presence');
+      }
+      if (['n', 'b'].includes(piece.type) && minorDevelopmentSquares.has(piece.square)) {
+        themes.add(`${pieceColorLabel(piece.color)}-minor-development`);
+      }
+    }
+  }
+
+  if (chess.inCheck()) {
+    themes.add('king-safety');
+  }
+
+  return [...themes].sort();
+}
+
+function describePosition(chess, ply) {
+  const phase = classifyPhase({ chess, ply });
+  return {
+    phase,
+    materialSignature: buildMaterialSignature(chess),
+    pawnStructureTags: classifyPawnStructure(chess),
+    tacticalMotifs: classifyTacticalMotifs(chess),
+    strategicThemes: classifyStrategicThemes({ chess, phase }),
+  };
+}
+
 function resultFromChess(chess) {
   if (chess.isCheckmate()) {
     return chess.turn() === 'w' ? '0-1' : '1-0';
@@ -605,7 +755,7 @@ export class GameService {
       fen: chess.fen(),
       ply: 0,
       sideToMove: sideToMove(chess.turn()),
-      phase: 'opening',
+      ...describePosition(chess, 0),
     });
 
     return {
@@ -674,7 +824,7 @@ export class GameService {
         fen: chess.fen(),
         ply: plyAfter,
         sideToMove: sideToMove(chess.turn()),
-        phase: 'unknown',
+        ...describePosition(chess, plyAfter),
       });
       linkedMove = this.games.linkMovePositionAfter({
         moveId: move.id,
@@ -892,7 +1042,7 @@ export class GameService {
       fen: chess.fen(),
       ply: plyAfter,
       sideToMove: sideToMove(chess.turn()),
-      phase: 'unknown',
+      ...describePosition(chess, plyAfter),
     });
 
     const linkedMove = this.games.linkMovePositionAfter({

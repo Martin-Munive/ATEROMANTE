@@ -43,6 +43,8 @@
 - Add review queue from learning events.
 - Record basic review results, written attempts, lightweight answer alignment and engine-candidate mention.
 - Expand "where did I learn this?" retrieval with position families and richer position-hash workflows.
+- Classify persisted positions by phase, material signature, pawn structure, tactical motifs and strategic themes.
+- Search learning traces by exact FEN, position hash and compatible position family.
 
 ## MVP 2 - Local Training Game
 - Play against engine inside the app.

@@ -137,6 +137,20 @@ The first slice stores:
 
 `event_log` is the audit and reconstruction source. Normalized tables make search, metrics and dashboard queries efficient.
 
+## Position Families
+Persisted positions include a deterministic first-pass family description:
+
+- phase: opening, middlegame, endgame or unknown;
+- normalized FEN hash;
+- material signature;
+- pawn-structure tags;
+- tactical motif tags;
+- strategic theme tags.
+
+The first classifier is intentionally conservative. It gives the retrieval layer enough structure to connect a lesson to exact positions and to compatible families without pretending to be a full chess understanding engine.
+
+`GET /api/learning/search?q=<fen-or-hash>` accepts a FEN or a 64-character position hash. When the hash exists in local storage, search expands from the exact position to compatible positions with the same phase/material signature or overlapping family tags.
+
 ## Export
 When exporting PGN, preserve:
 - standard PGN tags;

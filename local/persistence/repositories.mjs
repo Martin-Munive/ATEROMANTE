@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { hashFen, nowIso, STANDARD_STARTING_FEN } from './database.mjs';
+import { hashFen, normalizeFen, nowIso, STANDARD_STARTING_FEN } from './database.mjs';
 
 function id(prefix) {
   return `${prefix}_${randomUUID()}`;
@@ -19,6 +19,25 @@ function ftsQuery(value) {
     .slice(0, 8)
     .map((term) => `${term.replaceAll('"', '""')}*`)
     .join(' OR ');
+}
+
+function positionHashFromQuery(value) {
+  const query = String(value ?? '').trim();
+  if (/^[a-f0-9]{64}$/i.test(query)) {
+    return query.toLowerCase();
+  }
+  if (!query.includes('/')) {
+    return null;
+  }
+  const parts = query.split(/\s+/);
+  if (parts.length < 4) {
+    return null;
+  }
+  try {
+    return hashFen(normalizeFen(query));
+  } catch {
+    return null;
+  }
 }
 
 function rowToEvent(row) {
@@ -808,7 +827,9 @@ export class LearningRepository {
   searchLearningTrace({ query = '', gameId = null, limit = 8 } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim().slice(0, 120) : '';
     const boundedLimit = Number.isInteger(limit) && limit > 0 && limit <= 25 ? limit : 8;
-    const matchQuery = ftsQuery(normalizedQuery);
+    const positionHashQuery = positionHashFromQuery(normalizedQuery);
+    const positionFamily = positionHashQuery ? this.positionFamilyForHash(positionHashQuery) : null;
+    const matchQuery = positionHashQuery ? '' : ftsQuery(normalizedQuery);
     const clauses = [];
     const values = [];
 
@@ -820,6 +841,19 @@ export class LearningRepository {
     if (matchQuery) {
       clauses.push('learning_trace_fts MATCH ?');
       values.push(matchQuery);
+    } else if (positionHashQuery) {
+      const familyClauses = ['p.fen_hash = ?'];
+      const familyValues = [positionHashQuery];
+      if (positionFamily?.phase && positionFamily?.material_signature) {
+        familyClauses.push('(p.phase = ? AND p.material_signature = ?)');
+        familyValues.push(positionFamily.phase, positionFamily.material_signature);
+      }
+      for (const tag of positionFamily?.tags ?? []) {
+        familyClauses.push('LOWER(COALESCE(p.pawn_structure_tags, \'\') || \' \' || COALESCE(p.tactical_motifs, \'\') || \' \' || COALESCE(p.strategic_themes, \'\')) LIKE ?');
+        familyValues.push(`%${tag.toLowerCase()}%`);
+      }
+      clauses.push(`(${familyClauses.join(' OR ')})`);
+      values.push(...familyValues);
     } else if (normalizedQuery) {
       const likeQuery = `%${normalizedQuery.toLowerCase()}%`;
       clauses.push(`(
@@ -859,6 +893,12 @@ export class LearningRepository {
         p.fen AS position_fen,
         p.ply AS position_ply,
         p.side_to_move,
+        p.fen_hash AS position_fen_hash,
+        p.phase AS position_phase,
+        p.material_signature,
+        p.pawn_structure_tags,
+        p.tactical_motifs,
+        p.strategic_themes,
         te.summary AS tutor_summary,
         te.teaching_focus_json AS tutor_focus_json,
         g.opening_eco,
@@ -896,6 +936,32 @@ export class LearningRepository {
       ORDER BY ${orderBy}
       LIMIT ?
     `).all(...values);
+  }
+
+  positionFamilyForHash(fenHash) {
+    const row = this.db.prepare(`
+      SELECT phase, material_signature, pawn_structure_tags, tactical_motifs, strategic_themes
+      FROM positions
+      WHERE fen_hash = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(fenHash);
+
+    if (!row) {
+      return null;
+    }
+
+    const tags = [
+      ...JSON.parse(row.pawn_structure_tags || '[]'),
+      ...JSON.parse(row.tactical_motifs || '[]'),
+      ...JSON.parse(row.strategic_themes || '[]'),
+    ].filter((tag) => typeof tag === 'string' && tag.length > 0);
+
+    return {
+      phase: row.phase,
+      material_signature: row.material_signature,
+      tags: [...new Set(tags)].slice(0, 8),
+    };
   }
 
   refreshLearningTraceIndex(learningEventId) {

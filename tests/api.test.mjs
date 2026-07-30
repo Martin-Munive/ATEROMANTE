@@ -481,6 +481,18 @@ test('local API builds a post-game report from engine and tutor events', async (
     assert.equal(trace.results[0].expectedBestMove, 'd2d4');
     assert.equal(trace.results[0].latestAnswer, answerText);
     assert.equal(trace.results[0].positionFen, learning.reviewItem.positionFen);
+    assert.equal(trace.results[0].positionPhase, 'opening');
+    assert.match(trace.results[0].materialSignature, /^w:Q1R2B2N2P8\|b:Q1R2B2N2P8$/);
+    assert.ok(trace.results[0].pawnStructureTags.includes('white-central-pawn'));
+
+    const fenTraceResponse = await fetch(
+      `${baseUrl}/api/learning/search?gameId=${created.gameId}&q=${encodeURIComponent(learning.reviewItem.positionFen)}`,
+    );
+    assert.equal(fenTraceResponse.status, 200);
+    const fenTrace = await readJson(fenTraceResponse);
+    assert.equal(fenTrace.results[0].id, learning.learningEvent.id);
+    assert.equal(fenTrace.results[0].positionFenHash.length, 64);
+    assert.ok(fenTrace.results[0].strategicThemes.includes('opening-position'));
   }, { engineService });
 });
 

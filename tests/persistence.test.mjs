@@ -189,7 +189,9 @@ test('learning events can be traced back to the source position', () => {
     ply: 0,
     sideToMove: 'white',
     phase: 'opening',
-    strategicThemes: ['center-control'],
+    materialSignature: 'w:Q1R2B2N2P8|b:Q1R2B2N2P8',
+    pawnStructureTags: ['white-central-pawn', 'black-central-pawn'],
+    strategicThemes: ['opening-position', 'center-control'],
   });
 
   const lesson = learning.createLearningEvent({
@@ -243,6 +245,36 @@ test('learning events can be traced back to the source position', () => {
   assert.equal(openingTraceResults[0].id, lesson.id);
   assert.equal(openingTraceResults[0].opening_eco, 'B90');
   assert.equal(openingTraceResults[0].opening_name, 'Sicilian Defense: Najdorf Variation');
+
+  const secondSession = sessions.createSession();
+  const secondGame = games.createGame({ sessionId: secondSession.id });
+  const relatedPosition = games.recordPosition({
+    sessionId: secondSession.id,
+    gameId: secondGame.id,
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    ply: 1,
+    sideToMove: 'black',
+    phase: 'opening',
+    materialSignature: 'w:Q1R2B2N2P8|b:Q1R2B2N2P8',
+    pawnStructureTags: ['white-central-pawn'],
+    strategicThemes: ['opening-position', 'center-presence'],
+  });
+  const relatedLesson = learning.createLearningEvent({
+    sessionId: secondSession.id,
+    gameId: secondGame.id,
+    positionId: relatedPosition.id,
+    eventType: 'opening_idea',
+    theme: 'center-control',
+    skill: 'opening',
+    summary: 'The e-pawn family keeps the same material and opening structure.',
+    explanation: 'This lesson should be recovered by a family search from a compatible FEN.',
+  });
+
+  const fenTraceResults = learning.searchLearningTrace({ query: STANDARD_STARTING_FEN });
+  assert.ok(fenTraceResults.some((row) => row.id === lesson.id));
+  assert.ok(fenTraceResults.some((row) => row.id === relatedLesson.id));
+  assert.equal(fenTraceResults.find((row) => row.id === lesson.id).position_fen_hash, hashFen(STANDARD_STARTING_FEN));
+  assert.equal(fenTraceResults.find((row) => row.id === relatedLesson.id).position_phase, 'opening');
 
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));
