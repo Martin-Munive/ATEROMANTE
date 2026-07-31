@@ -273,8 +273,13 @@ test('learning events can be traced back to the source position', () => {
   const fenTraceResults = learning.searchLearningTrace({ query: STANDARD_STARTING_FEN });
   assert.ok(fenTraceResults.some((row) => row.id === lesson.id));
   assert.ok(fenTraceResults.some((row) => row.id === relatedLesson.id));
+  assert.equal(fenTraceResults[0].id, lesson.id);
+  assert.equal(fenTraceResults[0].position_match_score, 100);
+  assert.equal(fenTraceResults[0].position_match_reason, 'exact-position');
   assert.equal(fenTraceResults.find((row) => row.id === lesson.id).position_fen_hash, hashFen(STANDARD_STARTING_FEN));
   assert.equal(fenTraceResults.find((row) => row.id === relatedLesson.id).position_phase, 'opening');
+  assert.ok(fenTraceResults.find((row) => row.id === relatedLesson.id).position_match_score > 0);
+  assert.match(fenTraceResults.find((row) => row.id === relatedLesson.id).position_match_reason, /same-material|shared-tags/);
 
   const sessionEvents = events.listEventsBySession(session.id);
   assert.ok(sessionEvents.some((event) => event.event_type === 'learning.event.created'));

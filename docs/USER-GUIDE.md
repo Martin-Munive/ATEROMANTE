@@ -119,7 +119,7 @@ When the report has review items, ATEROMANTE shows a directed exercise prompt ti
 
 Use `Buscar aprendizaje` to recover saved learning traces by theme, tutor explanation text, SAN move, FEN fragment, full FEN, position hash, engine candidate, PGN ECO/opening, tags or written review attempts. This is the first local answer to "where did I learn this?" and searches the local SQLite learning memory through a local FTS index.
 
-When you search with a full FEN or a 64-character position hash, ATEROMANTE can also recover compatible position-family results from the same local database. The current family model uses phase, material signature, pawn structure, tactical motifs and strategic themes.
+When you search with a full FEN or a 64-character position hash, ATEROMANTE can also recover compatible position-family results from the same local database. The current family model uses phase, material signature, pawn structure, tactical motifs and strategic themes. Exact matches score `100`; family matches receive a smaller score based on shared traits.
 
 This is the first reporting and learning-memory layer; it is not yet a full weakness map or exercise generator.
 

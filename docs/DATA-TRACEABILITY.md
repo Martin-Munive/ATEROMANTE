@@ -151,6 +151,12 @@ The first classifier is intentionally conservative. It gives the retrieval layer
 
 `GET /api/learning/search?q=<fen-or-hash>` accepts a FEN or a 64-character position hash. When the hash exists in local storage, search expands from the exact position to compatible positions with the same phase/material signature or overlapping family tags.
 
+Position-family results include a simple match score and reason:
+
+- `100`: exact normalized FEN hash;
+- partial score: same phase, same material signature and shared family tags;
+- reason tokens such as `same-phase`, `same-material` or `shared-tags:<tags>`.
+
 ## Export
 When exporting PGN, preserve:
 - standard PGN tags;

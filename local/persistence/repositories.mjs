@@ -40,6 +40,52 @@ function positionHashFromQuery(value) {
   }
 }
 
+function jsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function scorePositionMatch(row, positionHashQuery, positionFamily) {
+  if (!positionHashQuery) {
+    return { score: null, reason: null };
+  }
+
+  if (row.position_fen_hash === positionHashQuery) {
+    return { score: 100, reason: 'exact-position' };
+  }
+
+  let score = 0;
+  const reasons = [];
+  if (positionFamily?.phase && row.position_phase === positionFamily.phase) {
+    score += 20;
+    reasons.push('same-phase');
+  }
+  if (positionFamily?.material_signature && row.material_signature === positionFamily.material_signature) {
+    score += 35;
+    reasons.push('same-material');
+  }
+
+  const rowTags = new Set([
+    ...jsonArray(row.pawn_structure_tags),
+    ...jsonArray(row.tactical_motifs),
+    ...jsonArray(row.strategic_themes),
+  ]);
+  const sharedTags = (positionFamily?.tags ?? []).filter((tag) => rowTags.has(tag));
+  if (sharedTags.length > 0) {
+    score += Math.min(45, sharedTags.length * 9);
+    reasons.push(`shared-tags:${sharedTags.slice(0, 4).join(',')}`);
+  }
+
+  return {
+    score: score > 0 ? score : null,
+    reason: reasons.length > 0 ? reasons.join('|') : null,
+  };
+}
+
 function rowToEvent(row) {
   return {
     ...row,
@@ -884,7 +930,7 @@ export class LearningRepository {
     const rankSelect = matchQuery ? 'bm25(learning_trace_fts) AS trace_rank,' : 'NULL AS trace_rank,';
     const orderBy = matchQuery ? 'trace_rank ASC, le.created_at DESC' : 'le.created_at DESC';
 
-    return this.db.prepare(`
+    const rows = this.db.prepare(`
       SELECT
         ${rankSelect}
         le.*,
@@ -936,6 +982,21 @@ export class LearningRepository {
       ORDER BY ${orderBy}
       LIMIT ?
     `).all(...values);
+
+    if (!positionHashQuery) {
+      return rows;
+    }
+
+    return rows
+      .map((row) => {
+        const match = scorePositionMatch(row, positionHashQuery, positionFamily);
+        return {
+          ...row,
+          position_match_score: match.score,
+          position_match_reason: match.reason,
+        };
+      })
+      .sort((a, b) => (b.position_match_score ?? 0) - (a.position_match_score ?? 0) || String(b.created_at).localeCompare(a.created_at));
   }
 
   positionFamilyForHash(fenHash) {

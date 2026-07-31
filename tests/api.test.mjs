@@ -492,6 +492,8 @@ test('local API builds a post-game report from engine and tutor events', async (
     const fenTrace = await readJson(fenTraceResponse);
     assert.equal(fenTrace.results[0].id, learning.learningEvent.id);
     assert.equal(fenTrace.results[0].positionFenHash.length, 64);
+    assert.equal(fenTrace.results[0].positionMatchScore, 100);
+    assert.equal(fenTrace.results[0].positionMatchReason, 'exact-position');
     assert.ok(fenTrace.results[0].strategicThemes.includes('opening-position'));
   }, { engineService });
 });

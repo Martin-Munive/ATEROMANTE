@@ -305,6 +305,7 @@ export function TutorPanel({ game }: TutorPanelProps) {
                       item.openingEco ?? item.openingName,
                       item.positionPhase,
                       item.materialSignature,
+                      item.positionMatchScore !== null ? `similitud ${item.positionMatchScore}` : null,
                       item.expectedBestMove ? `candidata ${item.expectedBestMove}` : null,
                       item.reviewDueAt ? `repaso ${new Date(item.reviewDueAt).toLocaleDateString('es-CO')}` : null,
                     ].filter(Boolean).join(' · ')}

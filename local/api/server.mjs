@@ -316,6 +316,8 @@ function serializeLearningTrace(row) {
     pawnStructureTags: row.pawn_structure_tags ? JSON.parse(row.pawn_structure_tags) : [],
     tacticalMotifs: row.tactical_motifs ? JSON.parse(row.tactical_motifs) : [],
     strategicThemes: row.strategic_themes ? JSON.parse(row.strategic_themes) : [],
+    positionMatchScore: row.position_match_score ?? null,
+    positionMatchReason: row.position_match_reason ?? null,
     tutorSummary: row.tutor_summary ?? null,
     tutorFocus: focus,
     openingEco: row.opening_eco ?? null,

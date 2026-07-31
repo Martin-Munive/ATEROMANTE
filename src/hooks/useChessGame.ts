@@ -283,6 +283,8 @@ export interface LearningTraceResult {
   pawnStructureTags: string[];
   tacticalMotifs: string[];
   strategicThemes: string[];
+  positionMatchScore: number | null;
+  positionMatchReason: string | null;
   tutorSummary: string | null;
   tutorFocus: string[];
   openingEco: string | null;
